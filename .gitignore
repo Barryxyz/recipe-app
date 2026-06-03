@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Secrets — this repo is public
+.env
+.env.*
+!.env.example
+supabase/.env
+supabase/.temp/
+*.p8
+*.p12
+*.mobileprovision
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+build/
+
+# Node / Deno
+node_modules/
+
+# Claude Code personal settings
+.claude/settings.local.json
