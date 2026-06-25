@@ -1,8 +1,8 @@
 # Fridge App — Design Document
 
-**Status:** Draft v1 · **Last updated:** 2026-06-02 · **Platform:** iOS only
+**Status:** Draft v1.1 · **Last updated:** 2026-06-24 · **Platform:** iOS only
 
-An iOS app that tracks what's in your fridge by photo, estimates quantities and expiry dates, and generates recipes from the ingredients on hand.
+An iOS app that tracks what's in your fridge — by photo or by manual entry — estimates quantities and expiry dates, and generates recipes from the ingredients on hand.
 
 ---
 
@@ -10,6 +10,7 @@ An iOS app that tracks what's in your fridge by photo, estimates quantities and 
 
 ### Goals
 - Scan a fridge with the camera and get an editable ingredient list with estimated quantities.
+- Add ingredients manually, without taking a photo. Scanning is optional, never required.
 - Track expiry dates for each item, with sensible defaults the user can change.
 - Generate recipes from available ingredients. A recipe doesn't need to use every ingredient.
 - Save, edit, delete and share recipes (up to 50 saved per user).
@@ -41,6 +42,7 @@ An iOS app that tracks what's in your fridge by photo, estimates quantities and 
 | FR-10 | Add a recipe's missing ingredients to a shopping list, check items off, and move bought items into the pantry. |
 | FR-11 | Mark pantry items as used or discarded. "Cooked this" subtracts a recipe's ingredients. |
 | FR-12 | Dietary preferences, allergens and pantry staples are taken into account when generating recipes. |
+| FR-13 | Add ingredients manually, without a photo: search the catalog or type free text, set quantity, unit, location and (optionally) expiry. Several items can be added in one session. Works on its own; no scan needed first. |
 
 ### Non-functional
 | ID | Requirement |
@@ -50,7 +52,7 @@ An iOS app that tracks what's in your fridge by photo, estimates quantities and 
 | NFR-3 | iOS only (SwiftUI). |
 | NFR-4 | Ingredient reference data and user/recipe data are stored separately (see Decision 1). |
 | NFR-5 | The AI API key never ships in the app. |
-| NFR-6 | Saved pantry and recipes can be viewed offline. Scanning and generation need a network connection. |
+| NFR-6 | Saved pantry and recipes can be viewed offline. Manual entry works offline once the cache exists (v1), with changes queued for sync. Scanning and generation need a network connection. |
 | NFR-7 | In-app account deletion (App Store requirement). |
 
 ---
@@ -79,7 +81,7 @@ An iOS app that tracks what's in your fridge by photo, estimates quantities and 
 ┌──────────────────────┐        ┌────────────────────── Supabase ──────────────────────┐
 │ iOS app (SwiftUI)    │        │                                                       │
 │                      │  HTTPS │  Auth (anonymous → Sign in with Apple)                │
-│  Camera / Review     ├───────►│                                                       │
+│  Scan / Manual add   ├───────►│                                                       │
 │  Pantry / Recipes    │        │  Edge Functions (TypeScript)                          │
 │  Shopping list       │        │   • scan-ingredients ───────────┐                     │
 │                      │        │   • generate-recipes ───────────┤                     │
@@ -156,7 +158,8 @@ app.user_shelf_life_overrides (    -- "customizable expiry" per ingredient type
 
 app.ingredients_private (          -- items the catalog doesn't know
   id bigint primary key, user_id uuid, name text,
-  nutrients_per_100g jsonb, is_estimated boolean default true
+  nutrients_per_100g jsonb,        -- null until estimated (manual free-text items, see §6.1b)
+  is_estimated boolean default true
 )
 
 app.pantry_items (
@@ -169,7 +172,9 @@ app.pantry_items (
   location text check (location in ('fridge','freezer','pantry')),
   added_at timestamptz, expires_at timestamptz,
   expiry_overridden boolean default false,
-  status text check (status in ('active','used','discarded')) default 'active'
+  status text check (status in ('active','used','discarded')) default 'active',
+  source text check (source in ('scan','manual','shopping_list')) not null
+                                   -- how the item was added; used to compare scan vs. manual use
 )
 
 app.recipes (
@@ -219,7 +224,10 @@ app.ai_usage_log (                 -- cost visibility (no caps, see D5)
 
 ## 6. Core flows
 
-### 6.1 Scan → pantry
+### 6.1 Adding ingredients
+There are two ways to add ingredients. They are equal: a user can rely on either one only, or mix them.
+
+### 6.1a Scan → pantry
 1. User picks a location (fridge/freezer/pantry) and takes 1–4 photos.
 2. The app resizes the photos and sends them to `scan-ingredients`.
 3. The Edge Function calls **Sonnet 5.5** with structured output:
@@ -229,13 +237,25 @@ app.ai_usage_log (                 -- cost visibility (no caps, see D5)
 6. Saved items get `expires_at = now + shelf life` (user override → catalog default for that location).
 7. Unknown items become `ingredients_private` rows with model-estimated nutrition, marked "estimated".
 
+### 6.1b Manual entry → pantry
+Entry points: the **+** button on the pantry screen, the empty-pantry screen ("Scan your fridge" / "Add manually", side by side), and **Add item** on the scan review screen (same sheet).
+
+1. User types a name. Type-ahead searches the catalog (`pg_trgm` on `name` and `aliases`). Recently and frequently added items show before the user types.
+2. Picking a catalog item fills in default unit, location (from category) and quantity of 1. The user can change any of them; quantity can also be "some".
+3. Expiry is calculated as in §6.1a step 6 and shown in the form. The user can override it (sets `expiry_overridden`).
+4. **Add & next** keeps the sheet open with the same location selected, for entering a grocery haul quickly. **Done** closes it.
+5. **No catalog match:** "Add "<text>" as a custom item" creates an `ingredients_private` row with `nutrients_per_100g = null`, and the user picks the location. Expiry uses a 7-day fridge default (editable) until a per-ingredient override exists.
+6. Saved items get `source = 'manual'`.
+
+**No AI call** during manual entry, so it's free and works with the catalog only. Nutrition for custom items is estimated later, only if a recipe uses them (§6.2 step 6).
+
 ### 6.2 Recipe generation
 1. User picks options: servings, max time, meal type, cuisine (optional), "use expiring items first" (on by default).
 2. `generate-recipes` loads the pantry, staples, preferences and allergens, and nutrition data for those ingredients.
 3. Calls **Haiku 5.5** with structured output for 2–3 recipes. Ingredients must reference pantry item IDs, staples, or be marked `missing`.
 4. **Validation:** ingredients exist, quantities don't exceed what's on hand (except `missing` items), no allergens appear, required fields are present.
 5. If validation fails, **retry once on Sonnet 5.5**.
-6. Macros are calculated on the server: `grams × per-100g nutrients`, per serving and total.
+6. Macros are calculated on the server: `grams × per-100g nutrients`, per serving and total. Custom ingredients with no nutrition yet (from manual entry) get a one-off Haiku estimate, saved on the `ingredients_private` row and marked estimated.
 7. Results are temporary until the user taps **Save** (which counts toward the 50 limit).
 
 The system prompt requires safe cooking temperatures for meat, poultry and eggs. The recipe screen shows a short food-safety disclaimer.
@@ -249,7 +269,7 @@ The system prompt requires safe cooking temperatures for meat, poultry and eggs.
 ### 6.4 Shopping list
 - On a recipe: **"Add missing to shopping list"** adds its `missing` ingredients (and amounts the pantry is short on).
 - Manual add from catalog search or free text.
-- Checking an item off can move it into the pantry, with expiry calculated as in §6.1.
+- Checking an item off can move it into the pantry (`source = 'shopping_list'`), with expiry calculated as in §6.1a.
 
 ### 6.5 Sharing
 - **Share** creates a random `share_token` and opens the iOS share sheet with `https://<domain>/r/<token>`.
@@ -266,7 +286,7 @@ The system prompt requires safe cooking temperatures for meat, poultry and eggs.
 |---|---|
 | Authentication | Anonymous sign-in for the prototype → Sign in with Apple for v1 |
 | Wrong scan results | Mandatory review screen; low-confidence items flagged |
-| Manual entry | Catalog search + free-text add |
+| Manual entry | First-class alternative to scanning (§6.1b): catalog type-ahead, recent items, free-text custom items, batch "Add & next"; no AI cost |
 | Units and quantities | Quantity + unit, converted to grams internally; "some" allowed |
 | Pantry staples | User-defined staples list, always available |
 | Diets and allergies | Collected during onboarding; in the prompt and checked in code |
@@ -314,7 +334,7 @@ Per call: scan ≈ $0.03, recipe set ≈ $0.003. **AI is the largest cost at eve
 | AI | Hybrid per D3; model names in config so they can be swapped while testing |
 | Notifications | Local only |
 
-**In scope:** scan → review → pantry; pantry list with expiry; recipe generation; save/edit/delete recipes; shopping list.
+**In scope:** scan → review → pantry; manual add (catalog search + custom items); pantry list with expiry; recipe generation; save/edit/delete recipes; shopping list.
 **Out of scope:** sharing, Sign in with Apple, 50-recipe limit, offline cache, full USDA import, account deletion.
 
 **Estimated effort:** ~2 weeks. **Estimated cost:** ~$3–5 of AI usage.
@@ -341,7 +361,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | F1.2 Ingredient detection | Vision prompt, catalog matching, merging duplicates, confidence | L |
 | F1.3 Scan review | Confirm/edit/delete/add, fix quantities and units | M |
 | F1.4 Pantry list | Grouped by location, sorted by expiry, badges, search | M |
-| F1.5 Manual add/edit | Catalog search, edit quantity/unit/expiry, used/discarded | M |
+| F1.5 Manual add/edit | Add without scanning: catalog type-ahead, recent/frequent items, custom free-text items, "Add & next" batch entry, empty-state entry point; edit quantity/unit/expiry; used/discarded | M |
 | F1.6 Expiry rules | Defaults, per-item override, per-ingredient user default | S |
 | F1.7 Onboarding prefs | Diets, allergens, staples, default servings | S |
 
@@ -389,7 +409,8 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 4. Meal planning
 5. User-contributed catalog entries (promote reviewed `ingredients_private` rows)
 6. Embedding-based ingredient matching if fuzzy matching isn't good enough
-7. Revisit the business model (caps or freemium) before scaling toward 10,000 users
+7. Natural-language quick add ("2 eggs, half a gallon of milk") or voice entry, parsed by Haiku into manual-entry rows
+8. Revisit the business model (caps or freemium) before scaling toward 10,000 users
 
 ---
 
@@ -399,5 +420,5 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | Scan accuracy on cluttered fridges | Main thing the prototype tests. Fallback: switch scans to a stronger model, or ask for photos per shelf. |
 | Haiku recipe quality | Prototype tests it; the retry on Sonnet limits bad output. Can switch recipes to Sonnet (~6x AI cost). |
 | Uncapped AI cost (D5) | Account spend limit + usage log; revisit before growth. |
-| Quantity estimation from photos | Expected to be rough; the review screen and "some" quantities absorb errors. |
+| Quantity estimation from photos | Expected to be rough; the review screen and "some" quantities absorb errors. Manual entry is the fallback if scans disappoint. |
 | Pricing changes | Supabase and Claude prices were checked on 2026-06-02; re-check before budgeting. |
