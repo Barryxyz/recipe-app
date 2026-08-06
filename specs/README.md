@@ -11,6 +11,7 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 | [F0.3](F0.3-schemas.md) | Schemas | M | yes | F0.1 |
 | [F0.4](F0.4-catalog-seed.md) | Catalog seed | L | part (~100 items) | F0.3 |
 | [F0.5](F0.5-ai-functions.md) | AI functions | M | yes | F0.1, F0.3 |
+| [F0.6](F0.6-purchase-verification.md) | Purchase verification | S | no | F0.2, F0.3, F0.5 |
 | [F1.1](F1.1-photo-scan.md) | Photo scan | M | yes | F0.2, F0.5 |
 | [F1.2](F1.2-ingredient-detection.md) | Ingredient detection | L | yes | F0.4, F0.5, F1.1 |
 | [F1.3](F1.3-scan-review.md) | Scan review | M | yes | F1.2, F1.5, F1.6 |
@@ -43,14 +44,17 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 4. **Recipes:** F2.3 → F2.1 → F2.2 (run the eval) → F2.4
 5. **Recipe management and the rest:** F3.1 → F3.3 → F3.2 → F3.4 → F3.5 → F5.1 → F5.2 events
 
-## Open decisions found while writing the specs
-| # | Decision | Recommendation | Spec |
-|---|---|---|---|
-| 1 | Add `catalog.ingredients.allergens` | **Yes.** Without it, allergens can't be checked in code. | F1.7, F2.2, F0.4 |
-| 2 | Add `location` to `user_shelf_life_overrides` | **Yes.** "Milk lasts 10 days" shouldn't apply to frozen milk. | F1.6 |
-| 3 | Estimate nutrition for unknown scanned items later, not during the scan | **Yes.** Same as manual entry, and keeps the scan prompt smaller (update DESIGN §6.1a step 7). | F1.2 |
-| 4 | Share page shows the live recipe or a snapshot taken at share time | **Live recipe;** the recipient saves the snapshot. | F4.1 |
-| 5 | Where to host the share page | **Cloudflare Worker on your own domain.** Supabase HTML and custom-domain limits; check first. | F4.2 |
-| 6 | `updated_at`/`deleted_at` and soft deletes on synced tables | **Yes, in v1,** needed for offline sync | F3.6, F0.3 |
-| 7 | `recipes.source` gains `'shared'` | **Yes** | F4.3 |
-| 8 | "Only use what I have" option for generation | **Yes for v1,** cheap to add | F2.1 |
+## Decisions applied (2026-08-05)
+All recommendations below were accepted and are now in DESIGN.md (v1.2) and the specs.
+
+| # | Decision | Where |
+|---|---|---|
+| 1 | `catalog.ingredients.allergens` added; allergens are checked in code | DESIGN §5, §6.2 · F0.3, F1.7, F2.2 |
+| 2 | Expiry overrides are per ingredient **and** location | DESIGN §5 · F1.6 |
+| 3 | Nutrition for unknown scanned items is estimated later, only when a recipe uses them | DESIGN §6.1a · F1.2 |
+| 4 | The share page shows the live recipe; the recipient's saved copy is the snapshot | DESIGN §6.5 · F4.1 |
+| 5 | The share page runs on a Cloudflare Worker on the app's own domain (D6) | DESIGN §3, §4 · F4.2 |
+| 6 | `updated_at` and soft deletes on synced tables | DESIGN §5 · F0.3, F3.3, F3.6 |
+| 7 | `recipes.source` gains `'shared'` | DESIGN §5 · F4.3 |
+| 8 | "Only use what I have" generation option | DESIGN §6.2 · F2.1, F2.2 |
+| 9 | **$4.99 one-time paid download** (D5); AI only for verified purchases (NFR-8) | DESIGN §3, §8, §12 · F0.5, F0.6, F5.2, F5.3 |

@@ -1,6 +1,6 @@
 # Fridge App — Design Document
 
-**Status:** Draft v1.1 · **Last updated:** 2026-06-24 · **Platform:** iOS only
+**Status:** Draft v1.2 · **Last updated:** 2026-08-05 · **Platform:** iOS only
 
 An iOS app that tracks what's in your fridge — by photo or by manual entry — estimates quantities and expiry dates, and generates recipes from the ingredients on hand.
 
@@ -16,12 +16,13 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 - Save, edit, delete and share recipes (up to 50 saved per user).
 - Build a shopping list from ingredients a recipe needs but the user doesn't have.
 - Support 100 users at launch, with an architecture that reaches 10,000 without a rewrite.
+- Sell the app as a one-time **$4.99 paid download** (D5).
 
 ### Non-goals (v1)
 - Android or web app (a web page exists only to view shared recipes).
 - Barcode scanning (deferred, see §11).
 - Household / shared fridges (deferred; the schema is ready for it, see §5).
-- Meal planning, recipe images, paid tiers.
+- Meal planning, recipe images, subscriptions or in-app purchases (the app is a one-time paid download, D5).
 
 ---
 
@@ -54,6 +55,7 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 | NFR-5 | The AI API key never ships in the app. |
 | NFR-6 | Saved pantry and recipes can be viewed offline. Manual entry works offline once the cache exists (v1), with changes queued for sync. Scanning and generation need a network connection. |
 | NFR-7 | In-app account deletion (App Store requirement). |
+| NFR-8 | AI features work only for accounts with a verified App Store purchase, so the public API key can't be used for free AI calls. |
 
 ---
 
@@ -65,13 +67,18 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 | D2 | Backend platform | **Supabase.** Free tier for the prototype, Pro ($25/month) for production | EC2 (days–weeks of setup and ongoing maintenance), Firebase (NoSQL conflicts with D1), CloudKit (can't run AI calls) |
 | D3 | AI models | **Hybrid:** Claude Sonnet 5.5 for photo scans, Claude Haiku 5.5 for recipe generation. Model is a config value. | Sonnet for everything (~6x cost), Haiku for everything (weaker scans), Opus 5.5 (~11x cost) |
 | D4 | v1 scope | **Shopping list included.** Barcode scanning and household sharing deferred. | — |
-| D5 | Business model | **Completely free, no per-user caps** | Free with caps, freemium subscription, one-time purchase |
+| D5 | Business model | **Paid download, $4.99 one-time (US). No subscriptions, in-app purchases or per-user caps.** | Completely free (previous choice), free with caps, freemium subscription |
+| D6 | Share page hosting | **Cloudflare Worker (free tier) on the app's own domain (~$10–15/year).** It also serves the Universal Links file and the privacy policy. | Supabase Edge Function (serves HTML as plain text on the default domain; a custom domain is a paid add-on — check current Supabase docs) |
 
 ### Rationale
 - **D1:** Joins between recipes, ingredients and nutrition stay in one query. Each schema has its own permissions. Either schema can move to its own database later without changing app code.
 - **D2:** Postgres matches D1. Supabase provides auth (anonymous now, Sign in with Apple later), row-level security, and Edge Functions to relay AI calls. Prototype code carries straight into production.
 - **D3:** Scans are infrequent and accuracy is what users notice first, so they get the stronger vision model. Recipe generation is the frequent call. Server-side checks (§6.2) catch Haiku mistakes, with one retry on Sonnet if checks fail.
-- **D5:** Accepted risk: AI costs grow with usage and have no per-user ceiling. **Mitigation:** set a monthly spend limit on the Anthropic account before inviting anyone besides the developer, and log token usage per user so abuse is visible.
+- **D5:** One-time price of $4.99 in the US. Apple sets equivalent prices in other countries, and $5.00 is also an allowed price point. With the App Store Small Business Program (15% commission), each US sale nets about **$4.24**. Accepted risk: revenue arrives once, while AI and hosting costs continue (see §8). **Mitigation:**
+  - Set a monthly spend limit on the Anthropic account before inviting anyone besides the developer.
+  - Log token usage per user.
+  - AI functions only serve verified purchases (NFR-8, F0.6).
+- **D6:** Universal Links need an `apple-app-site-association` file on a domain the app controls, and the share page must be served as real HTML. A Worker on our own domain does both for free.
 
 ---
 
@@ -86,7 +93,7 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 │  Shopping list       │        │   • scan-ingredients ───────────┐                     │
 │                      │        │   • generate-recipes ───────────┤                     │
 │  SwiftData cache     │        │   • recompute-macros            │                     │
-│  (offline viewing)   │        │   • share-page (public HTML)    │                     │
+│  (offline viewing)   │        │   • verify-purchase             │                     │
 └──────────────────────┘        │                                 ▼                     │
                                 │  Postgres                   Claude API                │
                                 │   ├─ catalog.*  (shared)     • Sonnet 5.5 (vision)    │
@@ -99,6 +106,8 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 - **Source of truth:** the server. The device keeps a SwiftData cache for offline viewing and editing, and syncs changes when back online.
 - **All AI calls go through Edge Functions.** The app never holds the API key.
 - **Photos** are resized on the device (longest edge ~1568px, JPEG), sent to `scan-ingredients`, forwarded to the model, and never written to storage or logs.
+- **Share page** (D6): a Cloudflare Worker on the app's own domain. It serves `/r/<token>` (reading the recipe through a Supabase function), the Universal Links file, and `/privacy`.
+- **Purchase check** (NFR-8): `verify-purchase` checks Apple's signed proof of purchase once per account. AI functions refuse accounts without it.
 
 ---
 
@@ -120,7 +129,8 @@ catalog.ingredients (
   shelf_life_fridge_days   int,
   shelf_life_freezer_days  int,
   shelf_life_pantry_days   int,
-  is_common_staple         boolean default false     -- salt, oil, pepper
+  is_common_staple         boolean default false,    -- salt, oil, pepper
+  allergens                text[] default '{}'       -- top-9 allergens + gluten; checked in code (§6.2)
 )
 
 catalog.ingredient_nutrients (            -- per 100 g
@@ -140,6 +150,8 @@ app.households (id uuid primary key, created_at timestamptz)
 app.users (
   id uuid primary key,             -- = Supabase auth user id
   household_id uuid references app.households,
+  purchase_verified_at timestamptz,  -- App Store purchase proof checked (NFR-8); service role only
+  purchase_environment text,         -- 'Production' | 'Sandbox' | 'Xcode'
   created_at timestamptz,
   deleted_at timestamptz
 )
@@ -151,9 +163,11 @@ app.user_prefs (
   default_servings int default 2
 )
 
-app.user_shelf_life_overrides (    -- "customizable expiry" per ingredient type
-  user_id uuid, ingredient_id bigint, days int,
-  primary key (user_id, ingredient_id)
+app.user_shelf_life_overrides (    -- "customizable expiry" per ingredient type and location
+  user_id uuid, ingredient_id bigint,
+  location text check (location in ('fridge','freezer','pantry')),
+  days int,
+  primary key (user_id, ingredient_id, location)
 )
 
 app.ingredients_private (          -- items the catalog doesn't know
@@ -185,12 +199,12 @@ app.recipes (
   steps jsonb,                     -- ordered list of instruction strings
   macros_per_serving jsonb,        -- calculated by the server, never by the model
   macros_total jsonb,
-  source text check (source in ('ai','edited')),
+  source text check (source in ('ai','edited','shared')),  -- 'shared' = saved from someone's link
   model_version text,
   share_token text unique,         -- null = not shared
   created_at timestamptz, updated_at timestamptz
 )
--- Trigger: reject inserts when the user already has 50 recipes.
+-- Trigger: reject inserts when the user already has 50 recipes (soft-deleted rows don't count).
 
 app.recipe_ingredients (
   recipe_id uuid references app.recipes on delete cascade,
@@ -220,6 +234,11 @@ app.ai_usage_log (                 -- cost visibility (no caps, see D5)
 
 **Soft references:** `ingredient_id` columns in `app` aren't foreign keys into `catalog`. Copied `name` and `grams` keep recipes readable even if catalog entries change, and keep the schemas independent (D1).
 
+**Sync columns (for offline sync, F3.6):**
+- Every synced `app` table has `updated_at`, kept current by a trigger.
+- `pantry_items`, `shopping_list_items`, `recipes`, `ingredients_private` and `user_shelf_life_overrides` also have `deleted_at`. Deletes on them are **soft deletes**, so other devices learn about them, and a nightly job purges rows deleted more than 30 days ago.
+- `recipe_ingredients` sync with their parent recipe.
+
 ---
 
 ## 6. Core flows
@@ -235,7 +254,7 @@ There are two ways to add ingredients. They are equal: a user can rely on either
 4. Each item is matched to the catalog (exact → alias → fuzzy). Duplicates across photos are merged.
 5. **Review screen:** user confirms, edits, deletes or adds items. Low-confidence items are flagged.
 6. Saved items get `expires_at = now + shelf life` (user override → catalog default for that location).
-7. Unknown items become `ingredients_private` rows with model-estimated nutrition, marked "estimated".
+7. Unknown items become `ingredients_private` rows with no nutrition yet. As with manual custom items, nutrition is estimated only if a recipe uses them (§6.2 step 6).
 
 ### 6.1b Manual entry → pantry
 Entry points: the **+** button on the pantry screen, the empty-pantry screen ("Scan your fridge" / "Add manually", side by side), and **Add item** on the scan review screen (same sheet).
@@ -250,10 +269,15 @@ Entry points: the **+** button on the pantry screen, the empty-pantry screen ("S
 **No AI call** during manual entry, so it's free and works with the catalog only. Nutrition for custom items is estimated later, only if a recipe uses them (§6.2 step 6).
 
 ### 6.2 Recipe generation
-1. User picks options: servings, max time, meal type, cuisine (optional), "use expiring items first" (on by default).
+1. User picks options: servings, max time, meal type, cuisine (optional), "use expiring items first" (on by default), and "only use what I have" (off by default; when on, no `missing` ingredients are allowed).
 2. `generate-recipes` loads the pantry, staples, preferences and allergens, and nutrition data for those ingredients.
 3. Calls **Haiku 5.5** with structured output for 2–3 recipes. Ingredients must reference pantry item IDs, staples, or be marked `missing`.
-4. **Validation:** ingredients exist, quantities don't exceed what's on hand (except `missing` items), no allergens appear, required fields are present.
+4. **Validation:**
+   - ingredients exist
+   - quantities don't exceed what's on hand (except `missing` items)
+   - no allergens appear: checked against `catalog.ingredients.allergens`, plus a name match for custom and free-text items
+   - no `missing` items when "only use what I have" is on
+   - required fields are present
 5. If validation fails, **retry once on Sonnet 5.5**.
 6. Macros are calculated on the server: `grams × per-100g nutrients`, per serving and total. Custom ingredients with no nutrition yet (from manual entry) get a one-off Haiku estimate, saved on the `ingredients_private` row and marked estimated.
 7. Results are temporary until the user taps **Save** (which counts toward the 50 limit).
@@ -273,9 +297,9 @@ The system prompt requires safe cooking temperatures for meat, poultry and eggs.
 
 ### 6.5 Sharing
 - **Share** creates a random `share_token` and opens the iOS share sheet with `https://<domain>/r/<token>`.
-- **Without the app:** the link opens a read-only web page served by `share-page`.
+- **Without the app:** the link opens a read-only web page served by the Cloudflare Worker (D6).
 - **With the app:** the Universal Link opens the recipe in the app with **"Save to my recipes"**.
-- The link shows a snapshot of the recipe. The owner can revoke it (clears `share_token`).
+- The page shows the recipe **as currently saved**, so the owner's edits appear. **Save to my recipes** stores an independent copy (`source = 'shared'`), which is the snapshot. The owner can revoke the link (clears `share_token`).
 - *Requires the paid Apple Developer Program (for Universal Links), so it's not in the prototype.*
 
 ---
@@ -289,19 +313,20 @@ The system prompt requires safe cooking temperatures for meat, poultry and eggs.
 | Manual entry | First-class alternative to scanning (§6.1b): catalog type-ahead, recent items, free-text custom items, batch "Add & next"; no AI cost |
 | Units and quantities | Quantity + unit, converted to grams internally; "some" allowed |
 | Pantry staples | User-defined staples list, always available |
-| Diets and allergies | Collected during onboarding; in the prompt and checked in code |
+| Diets and allergies | Collected during onboarding; in the prompt and checked in code against catalog allergen tags |
 | Inventory never decreases | Used/discarded actions; "Cooked this" subtracts ingredients |
 | Expiry alerts | Daily local notification digest; pantry sorted by expiry |
 | Generated vs. saved recipes | Generated recipes are temporary; saving counts toward 50 |
 | Macro accuracy | Calculated on the server from the catalog, never by the model |
 | Unknown ingredients | Private ingredient with estimated nutrition |
-| Share link behavior | Web page + Universal Link, snapshot, revocable |
-| AI cost and abuse | No per-user caps (D5); account spend limit + per-user usage log |
+| Share link behavior | Web page (D6) + Universal Link; the page shows the live recipe, and saving makes a copy; revocable |
+| AI cost and abuse | Paid download, no per-user caps (D5); account spend limit, per-user usage log |
+| Free AI through the public API key | AI functions require a verified App Store purchase (NFR-8, F0.6) |
 | Photo privacy | Never stored or logged; stated in the privacy policy and App Store privacy labels |
 | Account deletion | In-app deletion removes all `app` rows and revokes share links |
 | Food safety | Safe-temperature rules in the prompt + disclaimer |
-| Storage locations | Fridge, freezer, pantry, each with its own shelf life |
-| Offline | Cached viewing and editing; scan and generate need a network connection |
+| Storage locations | Fridge, freezer, pantry, each with its own shelf life; user expiry overrides are per ingredient **and** location |
+| Offline | Cached viewing and editing, synced with `updated_at` and soft deletes; scan and generate need a network connection |
 | Household sharing | Deferred; `household_id` already in the schema |
 
 ---
@@ -316,8 +341,23 @@ Prices: Claude Sonnet 5.5 at $2 / $10 per 1M input/output tokens, Haiku 5.5 at $
 | AI (worst case: every user scans 8× and generates 30× per month) | ~$3–5 total | ~$33/month | ~$3,300/month |
 | AI (typical, 20–40% of worst case) | — | ~$7–13/month | ~$660–1,300/month |
 | Apple Developer Program | $0 (free Apple ID) | $99/year | $99/year |
+| Domain + Cloudflare Worker (D6) | $0 | ~$1/month | ~$1/month |
 
-Per call: scan ≈ $0.03, recipe set ≈ $0.003. **AI is the largest cost at every scale.** With no per-user caps (D5), revisit the business model before growing toward 10,000 users.
+Per call: scan ≈ $0.03, recipe set ≈ $0.003. **AI is the largest cost at every scale.**
+
+### Revenue (D5)
+Net per US sale ≈ **$4.24** ($4.99 minus the 15% Small Business Program commission; EU prices include VAT, so they net less).
+
+| | 100 users | 10,000 users |
+|---|---|---|
+| One-time revenue | ~$424 | ~$42,400 |
+| Monthly running cost (typical AI) | ~$43 | ~$760–1,420 |
+| Monthly running cost (worst-case AI) | ~$68 | ~$3,400 |
+| Months covered with no new sales (typical / worst case) | ~10 / ~6 | ~30–55 / ~12 |
+
+**Per user:** a worst-case user costs about $0.33/month in AI, so one purchase covers about 13 months of that user's heaviest use. A typical user costs about $0.07–0.13/month, which is 3–5 years.
+
+The model works while new sales keep pace with the people still using the app. Track **cost per purchaser** (F5.2). Family Sharing can spread one purchase across several people (see §12).
 
 ---
 
@@ -335,7 +375,8 @@ Per call: scan ≈ $0.03, recipe set ≈ $0.003. **AI is the largest cost at eve
 | Notifications | Local only |
 
 **In scope:** scan → review → pantry; manual add (catalog search + custom items); pantry list with expiry; recipe generation; save/edit/delete recipes; shopping list.
-**Out of scope:** sharing, Sign in with Apple, 50-recipe limit, offline cache, full USDA import, account deletion.
+**Out of scope:** sharing, Sign in with Apple, 50-recipe limit, offline cache, full USDA import, account deletion, purchase verification.
+**Pricing:** doesn't apply to the prototype. Xcode installs and TestFlight are free for testers.
 
 **Estimated effort:** ~2 weeks. **Estimated cost:** ~$3–5 of AI usage.
 
@@ -353,6 +394,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | F0.3 Schemas | `catalog` and `app` migrations, row-level security, 50-recipe trigger, households | M |
 | F0.4 Catalog seed | Import USDA FDC + FoodKeeper shelf lives, aliases, staples | L |
 | F0.5 AI functions | Edge Functions, structured output, validation, Sonnet retry, usage logging | M |
+| F0.6 Purchase verification | App Store purchase proof sent on sign-in, `verify-purchase` function, AI functions require it, sandbox allowed for TestFlight | S |
 
 ### Phase 1 — Pantry
 | Feature | Stories | Size |
@@ -368,7 +410,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 ### Phase 2 — Recipe generation
 | Feature | Stories | Size |
 |---|---|---|
-| F2.1 Request options | Servings, time, meal type, cuisine, use expiring first | S |
+| F2.1 Request options | Servings, time, meal type, cuisine, use expiring first, only use what I have | S |
 | F2.2 Generation pipeline | Prompt, structured output, validation, retry | L |
 | F2.3 Macros | Server-side calculation, per serving and total, "estimated" flag | M |
 | F2.4 Results UI | 2–3 candidate cards, detail view, regenerate | M |
@@ -387,7 +429,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | Feature | Stories | Size |
 |---|---|---|
 | F4.1 Share link | Create/revoke token, share sheet | S |
-| F4.2 Public page | Read-only web page via Edge Function | M |
+| F4.2 Public page | Read-only web page on a Cloudflare Worker (D6); also serves the Universal Links file and privacy policy | M |
 | F4.3 Universal Links | Open in app, "Save to my recipes" | M |
 | F4.4 Export | Copy as text, export PDF | S |
 
@@ -396,7 +438,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 |---|---|---|
 | F5.1 Expiry notifications | Daily local digest, settings | S |
 | F5.2 Observability | Crash reporting, product events, AI cost dashboard from `ai_usage_log` | S |
-| F5.3 App Store readiness | Privacy policy, privacy labels, disclaimer, TestFlight, account spend limit | M |
+| F5.3 App Store readiness | Paid Apps Agreement, tax and banking, Small Business Program, $4.99 price, privacy policy, privacy labels, disclaimer, TestFlight, account spend limit | M |
 
 **Total v1 estimate:** ~11–15 weeks for one developer.
 
@@ -410,7 +452,8 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 5. User-contributed catalog entries (promote reviewed `ingredients_private` rows)
 6. Embedding-based ingredient matching if fuzzy matching isn't good enough
 7. Natural-language quick add ("2 eggs, half a gallon of milk") or voice entry, parsed by Haiku into manual-entry rows
-8. Revisit the business model (caps or freemium) before scaling toward 10,000 users
+8. Revisit pricing (a price change, or an optional subscription for heavy users) if AI cost per purchaser approaches the ≈$4.24 net per sale (§8)
+9. App Store Server Notifications: remove AI access when a purchase is refunded
 
 ---
 
@@ -419,6 +462,8 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 |---|---|
 | Scan accuracy on cluttered fridges | Main thing the prototype tests. Fallback: switch scans to a stronger model, or ask for photos per shelf. |
 | Haiku recipe quality | Prototype tests it; the retry on Sonnet limits bad output. Can switch recipes to Sonnet (~6x AI cost). |
-| Uncapped AI cost (D5) | Account spend limit + usage log; revisit before growth. |
+| One-time revenue vs. ongoing AI cost (D5) | Each sale nets ≈$4.24 once, while costs continue. Track cost per purchaser (F5.2); account spend limit as the backstop; revisit pricing if needed (§11). |
+| Paid download lowers adoption | Paid apps can't offer a free trial. Screenshots, the description and shared recipe pages have to sell it. Watch conversion in App Store Connect. |
+| Family Sharing | Paid apps can be shared with up to 6 family members, each with their own account, so one sale can mean several users' AI cost. Accepted; check in App Store Connect whether it can be turned off. |
 | Quantity estimation from photos | Expected to be rough; the review screen and "some" quantities absorb errors. Manual entry is the fallback if scans disappoint. |
 | Pricing changes | Supabase and Claude prices were checked on 2026-06-02; re-check before budgeting. |
