@@ -29,6 +29,7 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 | [F3.4](F3.4-cooked-this.md) | "Cooked this" | M | yes | F1.4, F2.4 |
 | [F3.5](F3.5-shopping-list.md) | Shopping list | M | yes | F1.5, F1.6, F2.4 |
 | [F3.6](F3.6-offline-cache.md) | Offline cache & sync | L | no | F0.3, Phases 1–3 |
+| [F3.7](F3.7-write-your-own-recipe.md) | Write your own recipe | M | yes | F3.1, F3.2, F2.3, F1.5 |
 | [F4.1](F4.1-share-link.md) | Share link | S | no | F3.1 |
 | [F4.2](F4.2-public-page.md) | Public page | M | no | F4.1 |
 | [F4.3](F4.3-universal-links.md) | Universal Links | M | no | F4.1, F4.2, F3.1 |
@@ -42,7 +43,7 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 2. **Pantry without AI:** F1.6 → F1.5 → F1.4 → F1.7. The app is already useful at this point, and it's the cheapest way to check the data model.
 3. **Scanning:** F1.1 → F1.2 (run the eval) → F1.3
 4. **Recipes:** F2.3 → F2.1 → F2.2 (run the eval) → F2.4
-5. **Recipe management and the rest:** F3.1 → F3.3 → F3.2 → F3.4 → F3.5 → F5.1 → F5.2 events
+5. **Recipe management and the rest:** F3.1 → F3.3 → F3.2 → F3.7 → F3.4 → F3.5 → F5.1 → F5.2 events
 
 ## Decisions applied (2026-08-05)
 All recommendations below were accepted and are now in DESIGN.md (v1.2) and the specs.

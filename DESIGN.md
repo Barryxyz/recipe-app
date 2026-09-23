@@ -1,6 +1,6 @@
 # Fridge App — Design Document
 
-**Status:** Draft v1.2 · **Last updated:** 2026-08-05 · **Platform:** iOS only
+**Status:** Draft v1.3 · **Last updated:** 2026-09-22 · **Platform:** iOS only
 
 An iOS app that tracks what's in your fridge — by photo or by manual entry — estimates quantities and expiry dates, and generates recipes from the ingredients on hand.
 
@@ -14,6 +14,7 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 - Track expiry dates for each item, with sensible defaults the user can change.
 - Generate recipes from available ingredients. A recipe doesn't need to use every ingredient.
 - Save, edit, delete and share recipes (up to 50 saved per user).
+- Let users write their own recipes (ingredients, description, steps) alongside AI-generated ones.
 - Build a shopping list from ingredients a recipe needs but the user doesn't have.
 - Support 100 users at launch, with an architecture that reaches 10,000 without a rewrite.
 - Sell the app as a one-time **$4.99 paid download** (D5).
@@ -44,6 +45,7 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 | FR-11 | Mark pantry items as used or discarded. "Cooked this" subtracts a recipe's ingredients. |
 | FR-12 | Dietary preferences, allergens and pantry staples are taken into account when generating recipes. |
 | FR-13 | Add ingredients manually, without a photo: search the catalog or type free text, set quantity, unit, location and (optionally) expiry. Several items can be added in one session. Works on its own; no scan needed first. |
+| FR-14 | Write a recipe from scratch: title, description, servings, times, ingredients (catalog search or free text, with quantities) and steps. It is saved, edited, shared, cooked and counted toward the 50 limit like an AI recipe, and gets server-calculated macros. |
 
 ### Non-functional
 | ID | Requirement |
@@ -199,8 +201,9 @@ app.recipes (
   steps jsonb,                     -- ordered list of instruction strings
   macros_per_serving jsonb,        -- calculated by the server, never by the model
   macros_total jsonb,
-  source text check (source in ('ai','edited','shared')),  -- 'shared' = saved from someone's link
-  model_version text,
+  source text check (source in ('ai','edited','shared','manual')),
+                                   -- 'shared' = saved from someone's link; 'manual' = written by the user
+  model_version text,              -- null for manual recipes
   share_token text unique,         -- null = not shared
   created_at timestamptz, updated_at timestamptz
 )
@@ -282,13 +285,30 @@ Entry points: the **+** button on the pantry screen, the empty-pantry screen ("S
 6. Macros are calculated on the server: `grams × per-100g nutrients`, per serving and total. Custom ingredients with no nutrition yet (from manual entry) get a one-off Haiku estimate, saved on the `ingredients_private` row and marked estimated.
 7. Results are temporary until the user taps **Save** (which counts toward the 50 limit).
 
-The system prompt requires safe cooking temperatures for meat, poultry and eggs. The recipe screen shows a short food-safety disclaimer.
+The system prompt requires safe cooking temperatures for meat, poultry and eggs. The recipe screen shows a short food-safety disclaimer on AI recipes (not on the user's own, §6.3a).
 
 ### 6.3 Saved recipes
 - List and search saved recipes. At 50, saving is blocked and the app offers "replace a recipe".
-- Editing ingredients or servings triggers `recompute-macros`, and `source` becomes `edited`.
+- Editing ingredients or servings triggers `recompute-macros`. An AI or shared recipe's `source` becomes `edited`; a manual recipe stays `manual`.
 - Delete with confirmation and an undo toast.
 - **"Cooked this"** shows a review of quantities to subtract from the pantry.
+
+### 6.3a Writing your own recipe
+1. **Recipes → + → New recipe**, **Write your own** on the empty Recipes screen, or **Duplicate** on any saved recipe.
+2. The recipe editor (the same one used for editing) opens empty:
+   - title (required)
+   - description
+   - servings
+   - prep and cook times (optional)
+   - ingredients (at least 1)
+   - steps (at least 1)
+3. **Ingredients:** each line uses the catalog search from manual pantry entry. An unknown name becomes a custom ingredient (`ingredients_private`), so its nutrition can be estimated.
+4. **Paste:** **Paste list** parses a pasted ingredient list on the device ("1 1/2 tsp salt" → quantity, unit, name). **Paste steps** splits pasted instructions into steps. Neither uses AI.
+5. **Save:** stores the recipe with `source = 'manual'` and counts toward the 50 limit. `recompute-macros` then calculates macros from the catalog, estimating custom ingredients once (§6.2 step 6).
+6. **Allergens:** if the recipe contains one of the user's allergens, a warning is shown. It isn't blocked, because it's the user's own recipe.
+7. **After saving:** manual recipes work like any other (edit, delete, Cooked this, shopping list, share, export). They're tagged "Mine" and carry no AI disclaimer.
+
+Writing a recipe is free. The only AI cost is the one-time nutrition estimate for unknown ingredients.
 
 ### 6.4 Shopping list
 - On a recipe: **"Add missing to shopping list"** adds its `missing` ingredients (and amounts the pantry is short on).
@@ -328,6 +348,7 @@ The system prompt requires safe cooking temperatures for meat, poultry and eggs.
 | Storage locations | Fridge, freezer, pantry, each with its own shelf life; user expiry overrides are per ingredient **and** location |
 | Offline | Cached viewing and editing, synced with `updated_at` and soft deletes; scan and generate need a network connection |
 | Household sharing | Deferred; `household_id` already in the schema |
+| User-written recipes | Same editor as editing (§6.3a); paste parsing on the device; macros from the catalog; allergen warning instead of a block |
 
 ---
 
@@ -374,7 +395,7 @@ The model works while new sales keep pace with the people still using the app. T
 | AI | Hybrid per D3; model names in config so they can be swapped while testing |
 | Notifications | Local only |
 
-**In scope:** scan → review → pantry; manual add (catalog search + custom items); pantry list with expiry; recipe generation; save/edit/delete recipes; shopping list.
+**In scope:** scan → review → pantry; manual add (catalog search + custom items); pantry list with expiry; recipe generation; save/edit/delete recipes; write your own recipes; shopping list.
 **Out of scope:** sharing, Sign in with Apple, 50-recipe limit, offline cache, full USDA import, account deletion, purchase verification.
 **Pricing:** doesn't apply to the prototype. Xcode installs and TestFlight are free for testers.
 
@@ -424,6 +445,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | F3.4 "Cooked this" | Subtract ingredients with review | M |
 | F3.5 Shopping list | Add missing from recipe, manual add, check off, move to pantry | M |
 | F3.6 Offline cache | SwiftData mirror, offline edits, sync | L |
+| F3.7 Write your own recipe | Create from scratch or duplicate, catalog or free-text ingredients, paste ingredient list and steps, macros, allergen warning, draft autosave | M |
 
 ### Phase 4 — Sharing
 | Feature | Stories | Size |
@@ -440,7 +462,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | F5.2 Observability | Crash reporting, product events, AI cost dashboard from `ai_usage_log` | S |
 | F5.3 App Store readiness | Paid Apps Agreement, tax and banking, Small Business Program, $4.99 price, privacy policy, privacy labels, disclaimer, TestFlight, account spend limit | M |
 
-**Total v1 estimate:** ~11–15 weeks for one developer.
+**Total v1 estimate:** ~12–16 weeks for one developer.
 
 ---
 
@@ -454,6 +476,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 7. Natural-language quick add ("2 eggs, half a gallon of milk") or voice entry, parsed by Haiku into manual-entry rows
 8. Revisit pricing (a price change, or an optional subscription for heavy users) if AI cost per purchaser approaches the ≈$4.24 net per sale (§8)
 9. App Store Server Notifications: remove AI access when a purchase is refunded
+10. Import a recipe from a web link or a cookbook photo (AI-parsed into the recipe editor, F3.7)
 
 ---
 
