@@ -11,8 +11,8 @@ do $$
 declare
   a  uuid := gen_random_uuid();
   b  uuid := gen_random_uuid();
-  ha uuid := gen_random_uuid();
-  hb uuid := gen_random_uuid();
+  ha uuid;
+  hb uuid;
   recipe_a uuid := gen_random_uuid();
   pantry_a uuid := gen_random_uuid();
   ing_id   bigint;
@@ -22,8 +22,14 @@ begin
   ------------------------------------------------------------------ setup (as postgres)
   insert into auth.users (id, aud, role) values (a, 'authenticated', 'authenticated'),
                                                 (b, 'authenticated', 'authenticated');
-  insert into app.households (id) values (ha), (hb);
-  insert into app.users (id, household_id) values (a, ha), (b, hb);
+  -- The sign-up trigger (F0.2) creates each user's household, app.users row and prefs.
+  select household_id into ha from app.users where id = a;
+  select household_id into hb from app.users where id = b;
+  if ha is null or hb is null or ha = hb then
+    failures := array_append(failures, 'sign-up trigger did not create separate households'::text);
+  end if;
+  select count(*) into n from app.user_prefs where user_id in (a, b) and default_servings = 2;
+  if n <> 2 then failures := array_append(failures, 'sign-up trigger did not create default prefs'::text); end if;
   insert into catalog.ingredients (name) values ('rls-test-egg') returning id into ing_id;
 
   ------------------------------------------------------------------ act as A
@@ -31,7 +37,8 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
 
   -- Defaults fill in user_id / household_id from the session.
-  insert into app.user_prefs default values;
+  update app.user_prefs set default_servings = 4;  -- own prefs are writable
+  get diagnostics n = row_count; if n <> 1 then failures := array_append(failures, 'A cannot update own prefs'::text); end if;
   insert into app.recipes (id, title, source) values (recipe_a, 'A recipe', 'manual');
   insert into app.recipe_ingredients (recipe_id, position, name) values (recipe_a, 0, 'egg'), (recipe_a, 1, 'salt');
   insert into app.pantry_items (id, display_name, source) values (pantry_a, 'A eggs', 'manual');

@@ -3,6 +3,8 @@ import SwiftUI
 /// Temporary F0.1 screen: calls the `hello` Edge Function and shows the result.
 /// Replaced by real navigation once the pantry features land.
 struct DebugView: View {
+    let user: AppUser
+
     private enum Status {
         case loading
         case ok(HelloResponse)
@@ -14,6 +16,11 @@ struct DebugView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Signed in (anonymous)") {
+                    LabeledContent("User", value: user.id.uuidString.prefix(8) + "…")
+                    LabeledContent("Household", value: user.householdId.uuidString.prefix(8) + "…")
+                    LabeledContent("Since", value: user.createdAt.formatted(date: .abbreviated, time: .shortened))
+                }
                 Section("Supabase") {
                     LabeledContent("URL", value: AppConfig.supabaseURL.host ?? "?")
                 }
@@ -47,5 +54,5 @@ struct DebugView: View {
 }
 
 #Preview {
-    DebugView()
+    DebugView(user: AppUser(id: UUID(), householdId: UUID(), createdAt: .now))
 }
