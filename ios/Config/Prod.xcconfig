@@ -1,0 +1,9 @@
+// Prod environment. The Supabase URL and publishable key are public by design
+// (row-level security protects the data), so they are committed.
+// Never put a secret or service_role key here: this repo is public.
+// In the prototype, Dev and Prod point at the same hosted project.
+//
+// "//" starts a comment in xcconfig files, so the URL is written as https:/$()/...
+
+SUPABASE_URL = https:/$()/YOUR-PROJECT-REF.supabase.co
+SUPABASE_KEY = sb_publishable_REPLACE_ME

@@ -1,0 +1,49 @@
+# XcodeGen spec. Run `xcodegen` in ios/ to (re)generate Fridge.xcodeproj.
+# The .xcodeproj is generated, so edit this file instead of the project in Xcode.
+name: Fridge
+options:
+  bundleIdPrefix: com.barryxyz
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+targets:
+  Fridge:
+    type: application
+    platform: iOS
+    sources:
+      - path: Fridge
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Release: Config/Prod.xcconfig
+    dependencies:
+      - package: Supabase
+    info:
+      path: Fridge/Info.plist
+      properties:
+        CFBundleDisplayName: Fridge
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        SupabaseURL: $(SUPABASE_URL)
+        SupabaseKey: $(SUPABASE_KEY)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.fridge
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
