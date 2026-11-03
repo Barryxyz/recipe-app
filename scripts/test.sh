@@ -39,7 +39,10 @@ except Exception:
 }
 
 run_ios_tests() {
-  sim=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [^(]+' | sed 's/ *$//')
+  # Always the same simulator, so only one of them takes up disk space.
+  sim="iPhone 16"
+  xcrun simctl list devices available | grep -q "    $sim (" || \
+    sim=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [^(]+' | sed 's/ *$//')
   [ -n "$sim" ] || { echo "  FAIL  no iPhone simulator installed"; failed=1; return; }
   (cd ios && xcodegen --quiet)
   log=$(mktemp)
