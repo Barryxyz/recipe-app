@@ -42,5 +42,32 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: V2KLBCFV26 # Barry Chin (Personal Team), free Apple ID
         ENABLE_PREVIEWS: YES
+        DEVELOPMENT_TEAM: V2KLBCFV26 # Barry Chin (Personal Team), free Apple ID
+
+  FridgeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FridgeTests
+    dependencies:
+      - target: Fridge
+      - package: Supabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.fridge.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        DEVELOPMENT_TEAM: V2KLBCFV26
+
+schemes:
+  Fridge:
+    build:
+      targets:
+        Fridge: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - FridgeTests

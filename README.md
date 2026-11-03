@@ -41,6 +41,17 @@ The prototype uses one hosted project for both Dev and Prod. Docker / `supabase 
 
 The app currently opens a debug screen that calls the `hello` function and shows whether the Anthropic key is configured.
 
+## Tests
+```
+./scripts/test.sh        # everything
+./scripts/test.sh db     # database only (~10 s)
+./scripts/test.sh ios    # iOS unit tests on the simulator
+```
+- `supabase/tests/*.sql`: row-level security, the sign-up trigger, catalog completeness and search. They run against the hosted project inside a rolled-back transaction, so they leave no data. Each prints `PASS` or the failed checks.
+- `ios/FridgeTests/`: unit tests (XCTest). The first simulator run is slow because it compiles the Supabase SDK.
+
+Each feature adds tests for its spec's acceptance criteria.
+
 ## Checking the key never ships
 After a build, this should print nothing:
 ```

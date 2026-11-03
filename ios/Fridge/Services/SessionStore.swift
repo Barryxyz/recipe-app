@@ -22,11 +22,6 @@ final class SessionStore {
     private(set) var state: State = .loading
     private var isStarting = false
 
-    /// Errors meaning the stored session is permanently unusable.
-    private static let deadSessionCodes: Set<ErrorCode> = [
-        .refreshTokenNotFound, .sessionNotFound, .sessionExpired, .userNotFound,
-    ]
-
     func start() async {
         guard !isStarting else { return }
         isStarting = true
@@ -44,7 +39,7 @@ final class SessionStore {
                 .value
             state = .ready(user)
         } catch {
-            state = .offline(Self.message(for: error))
+            state = .offline(SessionErrorPolicy.message(for: error))
         }
     }
 
@@ -59,22 +54,10 @@ final class SessionStore {
         if supabase.auth.currentSession != nil {
             do {
                 return try await supabase.auth.session   // refreshes if expired
-            } catch let error as AuthError where Self.isDeadSession(error) {
+            } catch where SessionErrorPolicy.action(forRestoreError: error) == .startOver {
                 try? await supabase.auth.signOut(scope: .local)
             }
         }
         return try await supabase.auth.signInAnonymously()
-    }
-
-    private static func isDeadSession(_ error: AuthError) -> Bool {
-        if case .sessionMissing = error { return true }
-        return deadSessionCodes.contains(error.errorCode)
-    }
-
-    private static func message(for error: Error) -> String {
-        if error is URLError {
-            return "You're offline. Connect to the internet and try again."
-        }
-        return "Couldn't reach the server. Try again in a moment.\n(\(error.localizedDescription))"
     }
 }
