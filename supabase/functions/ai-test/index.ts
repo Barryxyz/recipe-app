@@ -2,7 +2,7 @@
 // AI module. Body: { "force_validation_failure": true } rejects the primary model's answer
 // to exercise the fallback path.
 import "@supabase/functions-js/edge-runtime.d.ts";
-import { z } from "npm:zod@^4";
+import { z } from "npm:zod@4.6.7";
 import { callModel, withFallback } from "../_shared/ai.ts";
 import { effortFor, modelFor } from "../_shared/config.ts";
 import { aiEndpoint, HttpError } from "../_shared/http.ts";

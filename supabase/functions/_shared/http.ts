@@ -3,8 +3,8 @@
 //   kill switch (503).
 // - One error shape: { error: { code, message } }.
 // - Never logs request bodies, so photos never reach the logs (DESIGN §4).
-import { createSupabaseContext } from "npm:@supabase/server@^1.9.2/core";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@^2";
+import { createSupabaseContext } from "npm:@supabase/server@1.9.2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { aiEnabled, purchaseRequired } from "./config.ts";
 
 export const MAX_BODY_BYTES = 10 * 1024 * 1024;
@@ -77,12 +77,8 @@ export function aiEndpoint(
     }
     const userId = sb.userClaims.id as string;
 
-    const declared = Number(req.headers.get("content-length") ?? "0");
-    if (declared > MAX_BODY_BYTES) {
-      return errorResponse("payload_too_large", "Request body is over 10 MB.");
-    }
-    const raw = new Uint8Array(await req.arrayBuffer());
-    if (raw.byteLength > MAX_BODY_BYTES) {
+    const raw = await readBody(req);
+    if (raw === null) {
       return errorResponse("payload_too_large", "Request body is over 10 MB.");
     }
     let body: unknown = {};
@@ -117,6 +113,29 @@ export function aiEndpoint(
       return errorResponse("ai_failed", "Something went wrong. Try again.");
     }
   };
+}
+
+/**
+ * Reads the body, keeping at most MAX_BODY_BYTES; returns null if it's larger.
+ * An oversized body is still read to the end (and discarded): answering before the upload
+ * finishes makes the Supabase gateway return an empty 503 instead of our 413.
+ */
+async function readBody(req: Request): Promise<Uint8Array | null> {
+  if (!req.body) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for await (const chunk of req.body) {
+    total += chunk.byteLength;
+    if (total <= MAX_BODY_BYTES) chunks.push(chunk);
+  }
+  if (total > MAX_BODY_BYTES) return null;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.byteLength;
+  }
+  return out;
 }
 
 /** Structured, body-free log line. Never pass request or model content here. */

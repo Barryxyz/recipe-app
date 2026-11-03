@@ -1,7 +1,8 @@
 #!/bin/bash
 # Runs every test in the repo.
 #
-#   ./scripts/test.sh          database tests + iOS unit tests
+#   ./scripts/test.sh          everything below
+#   ./scripts/test.sh fn       type-check the Edge Functions (deno check)
 #   ./scripts/test.sh db       database tests only (fast, ~10 s)
 #   ./scripts/test.sh ios      iOS unit tests only (simulator)
 #
@@ -15,6 +16,21 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 
 what=${1:-all}
 failed=0
+
+run_fn_checks() {
+  command -v deno >/dev/null || { echo "  FAIL  deno is not installed"; failed=1; return; }
+  for dir in supabase/functions/*/; do
+    name=$(basename "$dir")
+    [ "$name" = _shared ] && continue
+    if out=$(cd "$dir" && deno check --config deno.json index.ts 2>&1); then
+      echo "  PASS  $name"
+    else
+      echo "  FAIL  $name"
+      printf '%s\n' "$out" | grep -E 'ERROR|error' | head -10 | sed 's/^/        /'
+      failed=1
+    fi
+  done
+}
 
 run_db_tests() {
   for f in supabase/tests/*.sql; do
@@ -58,6 +74,10 @@ run_ios_tests() {
   rm -f "$log"
 }
 
+if [ "$what" = all ] || [ "$what" = fn ]; then
+  echo "Edge Function type-check"
+  run_fn_checks
+fi
 if [ "$what" = all ] || [ "$what" = db ]; then
   echo "Database tests"
   run_db_tests

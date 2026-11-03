@@ -5,11 +5,11 @@
 // - Every call writes one app.ai_usage_log row, including failed ones.
 // - 60 s timeout, one SDK retry on 429/5xx/connection errors.
 // - Sonnet 5.5 calls opt into Anthropic's server-side refusal fallback.
-import Anthropic from "npm:@anthropic-ai/sdk@^1.4.0";
-import { betaZodOutputFormat } from "npm:@anthropic-ai/sdk@^1.4.0/helpers/beta/zod";
-import type { BetaMessageParam } from "npm:@anthropic-ai/sdk@^1.4.0/resources/beta/messages/messages";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@^2";
-import { z } from "npm:zod@^4";
+import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
+import { betaZodOutputFormat } from "npm:@anthropic-ai/sdk@0.135.0/helpers/beta/zod";
+import type { BetaMessageParam } from "npm:@anthropic-ai/sdk@0.135.0/resources/beta/messages/messages";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
+import { z } from "npm:zod@4.6.7";
 import { anthropicApiKey, type Effort } from "./config.ts";
 import { HttpError, log } from "./http.ts";
 

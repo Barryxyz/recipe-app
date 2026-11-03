@@ -16,6 +16,7 @@ scripts/    Repo tooling
 ### Tools
 - **Xcode 16+**, with the iOS platform installed (Xcode → Settings → Components, or `xcodebuild -downloadPlatform iOS`).
 - Point the command-line tools at Xcode: `sudo xcode-select -s /Applications/Xcode.app`
+- **Deno** (type-checks the Edge Functions in `scripts/test.sh`): `brew install deno`, or the binary from its GitHub releases.
 - **XcodeGen** and the **Supabase CLI**: `brew install xcodegen supabase/tap/supabase`, or download the binaries from their GitHub releases.
 
 ### Supabase (hosted, free tier)
@@ -26,6 +27,8 @@ The prototype uses one hosted project for both Dev and Prod. Docker / `supabase 
 3. Set the Anthropic key as a function secret. It is never committed and never sent to the app:
    `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
 4. Deploy the functions: `supabase functions deploy`
+   Prototype secret: `supabase secrets set REQUIRE_PURCHASE=false` (AI functions otherwise require a verified purchase, F0.6).
+   Optional: `SCAN_MODEL`, `RECIPE_MODEL`, `FALLBACK_MODEL`, `*_EFFORT`, and `AI_ENABLED=false` as the emergency stop. See `supabase/functions/_shared/config.ts`.
 5. Apply migrations: `supabase db push --remote`
 6. In the dashboard, Settings → Data API → **Exposed schemas**: add `app` and `catalog`.
 7. Load the ingredient catalog (safe to rerun): `supabase db query --remote -f supabase/seed/load_catalog.sql`
@@ -39,7 +42,7 @@ The prototype uses one hosted project for both Dev and Prod. Docker / `supabase 
    Xcode's Run button doesn't work with Xcode 16.4 and an iOS 27 iPhone (it fails extracting debug symbols); the script installs without them.
    With a free Apple ID the install expires after 7 days; run the script again to renew.
 
-The app currently opens a debug screen that calls the `hello` function and shows whether the Anthropic key is configured.
+The app currently opens a debug screen showing the signed-in anonymous user.
 
 ## Tests
 ```
@@ -49,6 +52,8 @@ The app currently opens a debug screen that calls the `hello` function and shows
 ```
 - `supabase/tests/*.sql`: row-level security, the sign-up trigger, catalog completeness and search. They run against the hosted project inside a rolled-back transaction, so they leave no data. Each prints `PASS` or the failed checks.
 - `ios/FridgeTests/`: unit tests (XCTest). The first simulator run is slow because it compiles the Supabase SDK.
+
+- `scripts/test-ai.sh`: AI function checks against the hosted project (auth, fallback, 413, model switch, kill switch). Makes real model calls (a fraction of a cent), so it isn't part of `test.sh`.
 
 Each feature adds tests for its spec's acceptance criteria.
 

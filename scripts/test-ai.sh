@@ -20,7 +20,8 @@ fail() { echo "  FAIL  $1"; failed=1; }
 json() { python3 -I -c "import json,sys; d=json.load(sys.stdin); print(eval(sys.argv[1], {'d': d}))" "$1"; }
 sql() { supabase db query --remote --yes "$1" 2>/dev/null | python3 -I -c '
 import json, sys
-t = sys.stdin.read(); d = json.loads(t[t.index("{"):]); print(list(d["rows"][0].values())[0])'; }
+t = sys.stdin.read(); d = json.loads(t[t.index("{"):]); rows = d.get("rows") or []
+print(list(rows[0].values())[0] if rows else "")'; }
 secrets() { supabase secrets set --yes "$@" >/dev/null 2>&1 || supabase secrets set "$@" >/dev/null; }
 call() { curl -s -o /tmp/ai-test.$$ -w '%{http_code}' -X POST "$FN" -H "apikey: $KEY" "$@"; }
 body() { cat /tmp/ai-test.$$; }
@@ -34,7 +35,10 @@ usage_rows() { sql "select count(*) from app.ai_usage_log where user_id = '$USER
 cleanup() {
   secrets AI_ENABLED=true
   supabase secrets unset --yes RECIPE_MODEL >/dev/null 2>&1
+  # Deleting the auth user cascades to app.users; the household has to go separately.
+  hid=$(sql "select household_id from app.users where id = '$USER_ID'")
   sql "delete from auth.users where id = '$USER_ID'" >/dev/null
+  [ -n "$hid" ] && sql "delete from app.households where id = '$hid'" >/dev/null
   rm -f /tmp/ai-test.$$
 }
 trap cleanup EXIT
