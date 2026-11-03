@@ -28,7 +28,9 @@ The prototype uses one hosted project for both Dev and Prod. Docker / `supabase 
 4. Deploy the functions: `supabase functions deploy`
 5. Apply migrations: `supabase db push --remote`
 6. In the dashboard, Settings → Data API → **Exposed schemas**: add `app` and `catalog`.
-7. Run the row-level security test (rolled back, leaves no data): `supabase db query --remote -f supabase/tests/rls_test.sql`. It prints `PASS` or the failed checks.
+7. Load the ingredient catalog (safe to rerun): `supabase db query --remote -f supabase/seed/load_catalog.sql`
+   To change items, edit `supabase/seed/catalog_items.csv` and rebuild with `python3 -I supabase/seed/build_catalog_seed.py <unzipped USDA SR Legacy CSV folder>` (see the script header).
+8. Run the row-level security test (rolled back, leaves no data): `supabase db query --remote -f supabase/tests/rls_test.sql`. It prints `PASS` or the failed checks.
 
 ### iOS app
 1. Put the project URL and **publishable** key (Project Settings → API Keys) in `ios/Config/Dev.xcconfig` and `ios/Config/Prod.xcconfig`. Both are public by design. Never put a secret key there: this repo is public.
