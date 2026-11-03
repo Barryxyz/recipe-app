@@ -12,10 +12,6 @@ packages:
     url: https://github.com/supabase/supabase-swift
     from: "2.0.0"
 
-configs:
-  Debug: debug
-  Release: release
-
 targets:
   Fridge:
     type: application
