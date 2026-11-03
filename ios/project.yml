@@ -42,4 +42,5 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: V2KLBCFV26 # Barry Chin (Personal Team), free Apple ID
         ENABLE_PREVIEWS: YES
