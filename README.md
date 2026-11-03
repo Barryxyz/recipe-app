@@ -26,13 +26,16 @@ The prototype uses one hosted project for both Dev and Prod. Docker / `supabase 
 3. Set the Anthropic key as a function secret. It is never committed and never sent to the app:
    `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
 4. Deploy the functions: `supabase functions deploy`
-5. Apply migrations (once they exist): `supabase db push`
+5. Apply migrations: `supabase db push --remote`
+6. In the dashboard, Settings → Data API → **Exposed schemas**: add `app` and `catalog`.
+7. Run the row-level security test (rolled back, leaves no data): `supabase db query --remote -f supabase/tests/rls_test.sql`. It prints `PASS` or the failed checks.
 
 ### iOS app
 1. Put the project URL and **publishable** key (Project Settings → API Keys) in `ios/Config/Dev.xcconfig` and `ios/Config/Prod.xcconfig`. Both are public by design. Never put a secret key there: this repo is public.
 2. Generate the Xcode project: `cd ios && xcodegen`
-3. Open `ios/Fridge.xcodeproj`, choose your Apple ID team under Signing & Capabilities, plug in your iPhone (Developer Mode on) and press Run.
-   With a free Apple ID the install expires after 7 days; run it again from Xcode to renew.
+3. Plug in your iPhone (Developer Mode on, unlocked) and run `./scripts/run-on-iphone.sh` from the Terminal app.
+   Xcode's Run button doesn't work with Xcode 16.4 and an iOS 27 iPhone (it fails extracting debug symbols); the script installs without them.
+   With a free Apple ID the install expires after 7 days; run the script again to renew.
 
 The app currently opens a debug screen that calls the `hello` function and shows whether the Anthropic key is configured.
 
