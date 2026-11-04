@@ -58,7 +58,16 @@ enum PantryAPI {
     }
 
     static func setStatus(_ id: UUID, _ status: PantryItem.Status) async throws {
-        try await app.from("pantry_items").update(["status": status.rawValue]).eq("id", value: id).execute()
+        try await setStatus([id], status)
+    }
+
+    /// One request for several items ("Discard all" expired, and its Undo).
+    static func setStatus(_ ids: [UUID], _ status: PantryItem.Status) async throws {
+        guard !ids.isEmpty else { return }
+        try await app.from("pantry_items")
+            .update(["status": status.rawValue])
+            .in("id", values: ids.map(\.uuidString))
+            .execute()
     }
 
     /// Soft delete (DESIGN §5): hidden everywhere, kept so offline sync can learn about it (F3.6).

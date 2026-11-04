@@ -18,6 +18,7 @@ struct PantryListView: View {
     @State private var search = ""
     @State private var expanded: Set<String> = []
     @State private var useFirstExpanded = true
+    @State private var confirmDiscardExpired: [PantryItem]?
 
     @State private var showAdd = false
     @State private var editing: PantryItem?
@@ -26,10 +27,13 @@ struct PantryListView: View {
     @State private var actionError: String?
 
     private struct UndoAction: Equatable {
-        let item: PantryItem
+        let items: [PantryItem]
         let status: PantryItem.Status
         let id = UUID()
-        var message: String { "\(item.displayName) \(status == .used ? "marked used" : "discarded")" }
+        var message: String {
+            let what = items.count == 1 ? items[0].displayName : "\(items.count) items"
+            return "\(what) \(status == .used ? "marked used" : "discarded")"
+        }
     }
 
     var body: some View {
@@ -44,6 +48,18 @@ struct PantryListView: View {
                 .sheet(item: $editing) { item in ItemFormView(mode: .edit(item)) { Task { await load() } } }
                 .sheet(isPresented: $showDebug) { DebugView(user: user) }
                 .overlay(alignment: .bottom) { undoToast }
+                .confirmationDialog(
+                    "Discard \(confirmDiscardExpired?.count ?? 0) expired item\(confirmDiscardExpired?.count == 1 ? "" : "s")?",
+                    isPresented: Binding(get: { confirmDiscardExpired != nil }, set: { if !$0 { confirmDiscardExpired = nil } }),
+                    titleVisibility: .visible
+                ) {
+                    Button("Discard all", role: .destructive) {
+                        if let list = confirmDiscardExpired { Task { await change(list, to: .discarded) } }
+                        confirmDiscardExpired = nil
+                    }
+                } message: {
+                    Text("They'll be marked as thrown out. You can undo right after.")
+                }
                 .alert("Something went wrong", isPresented: .constant(actionError != nil)) {
                     Button("OK") { actionError = nil }
                 } message: { Text(actionError ?? "") }
@@ -109,8 +125,10 @@ struct PantryListView: View {
         } else {
             switch tab {
             case .all:
-                let groups = PantryGrouping.groups(items, sort: sort)
-                let soon = groups.filter { $0.badge().isExpiringSoon }
+                let (expired, fresh) = splitExpired(items)
+                expiredSection(expired)
+                let groups = PantryGrouping.groups(fresh, sort: sort)
+                let soon = groups.filter { $0.badge().isUseSoon }
                 if !soon.isEmpty {
                     Section {
                         if useFirstExpanded { rows(soon, showLocation: true) }
@@ -126,18 +144,51 @@ struct PantryListView: View {
                     }
                 }
                 ForEach(StorageLocation.allCases) { loc in
-                    let rest = groups.filter { $0.location == loc && !$0.badge().isExpiringSoon }
+                    let rest = groups.filter { $0.location == loc && !$0.badge().isUseSoon }
                     if !rest.isEmpty {
                         Section(loc.title) { rows(rest, showLocation: false) }
                     }
                 }
             case .location(let loc):
-                let groups = PantryGrouping.groups(items.filter { $0.location == loc }, sort: sort)
-                if groups.isEmpty {
+                let here = items.filter { $0.location == loc }
+                let (expired, fresh) = splitExpired(here)
+                if here.isEmpty {
                     Text("Nothing in the \(loc.title.lowercased()) yet.").foregroundStyle(.secondary)
                 } else {
-                    Section { rows(groups, showLocation: false) }
+                    expiredSection(expired)
+                    let groups = PantryGrouping.groups(fresh, sort: sort)
+                    if !groups.isEmpty { Section { rows(groups, showLocation: false) } }
                 }
+            }
+        }
+    }
+
+    /// Expired batches are split from fresh ones, so a group with one expired and one fresh
+    /// carton shows the expired one under Expired and the fresh one where it belongs.
+    private func splitExpired(_ list: [PantryItem]) -> (expired: [PantryItem], fresh: [PantryItem]) {
+        let now = Date.now
+        let expired = list.filter { ExpiryBadge(expiresAt: $0.expiresAt, now: now).isExpired }
+        let ids = Set(expired.map(\.id))
+        return (expired, list.filter { !ids.contains($0.id) })
+    }
+
+    /// Shown only when something has expired. "Discard all" asks first and can be undone.
+    @ViewBuilder
+    private func expiredSection(_ expired: [PantryItem]) -> some View {
+        if !expired.isEmpty {
+            Section {
+                rows(PantryGrouping.groups(expired, sort: sort), showLocation: tab == .all)
+            } header: {
+                HStack {
+                    Text("Expired (\(expired.count))").foregroundStyle(.red)
+                    Spacer()
+                    Button("Discard all") { confirmDiscardExpired = expired }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.red)
+                        .textCase(nil)
+                }
+            } footer: {
+                Text("Still good? Tap an item to change its date.")
             }
         }
     }
@@ -252,12 +303,17 @@ struct PantryListView: View {
         loaded = true
     }
 
-    /// Removes the row right away, saves, and offers Undo for 5 s.
     private func change(_ item: PantryItem, to status: PantryItem.Status) async {
-        withAnimation { items.removeAll { $0.id == item.id } }
+        await change([item], to: status)
+    }
+
+    /// Removes the rows right away, saves, and offers Undo for 5 s.
+    private func change(_ list: [PantryItem], to status: PantryItem.Status) async {
+        let ids = Set(list.map(\.id))
+        withAnimation { items.removeAll { ids.contains($0.id) } }
         do {
-            try await PantryAPI.setStatus(item.id, status)
-            withAnimation { undo = UndoAction(item: item, status: status) }
+            try await PantryAPI.setStatus(Array(ids), status)
+            withAnimation { undo = UndoAction(items: list, status: status) }
         } catch {
             actionError = error.localizedDescription
             await load()
@@ -267,7 +323,7 @@ struct PantryListView: View {
     private func revert(_ action: UndoAction) async {
         withAnimation { undo = nil }
         do {
-            try await PantryAPI.setStatus(action.item.id, .active)
+            try await PantryAPI.setStatus(action.items.map(\.id), .active)
         } catch {
             actionError = error.localizedDescription
         }

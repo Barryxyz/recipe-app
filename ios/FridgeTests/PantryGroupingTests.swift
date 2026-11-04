@@ -49,13 +49,15 @@ final class PantryGroupingTests: XCTestCase {
         XCTAssertEqual(ExpiryBadge(expiresAt: expires, now: local("2026-11-06 00:00:00"), calendar: la), .expired)
     }
 
-    func testExpiringSoonIsRedOrangeYellowOnly() {
-        XCTAssertTrue(ExpiryBadge.expired.isExpiringSoon)
-        XCTAssertTrue(ExpiryBadge.today.isExpiringSoon)
-        XCTAssertTrue(ExpiryBadge.tomorrow.isExpiringSoon)
-        XCTAssertTrue(ExpiryBadge.days(3).isExpiringSoon)
-        XCTAssertFalse(ExpiryBadge.later(.now).isExpiringSoon)
-        XCTAssertFalse(ExpiryBadge.none.isExpiringSoon)
+    func testExpiredAndUseSoonAreSeparate() {
+        XCTAssertTrue(ExpiryBadge.expired.isExpired)
+        XCTAssertFalse(ExpiryBadge.expired.isUseSoon, "expired items have their own section")
+        XCTAssertTrue(ExpiryBadge.today.isUseSoon)
+        XCTAssertTrue(ExpiryBadge.tomorrow.isUseSoon)
+        XCTAssertTrue(ExpiryBadge.days(3).isUseSoon)
+        XCTAssertFalse(ExpiryBadge.later(.now).isUseSoon)
+        XCTAssertFalse(ExpiryBadge.none.isUseSoon)
+        XCTAssertFalse(ExpiryBadge.today.isExpired)
     }
 
     // MARK: Grouping

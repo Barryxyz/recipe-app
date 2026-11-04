@@ -25,11 +25,15 @@ enum ExpiryBadge: Equatable {
         }
     }
 
-    /// Red, orange and yellow badges go in "Use these first".
-    var isExpiringSoon: Bool {
+    /// Past its date: goes in the "Expired" section.
+    var isExpired: Bool { self == .expired }
+
+    /// Orange and yellow badges (today to 3 days) go in "Use these first". Expired items
+    /// have their own section.
+    var isUseSoon: Bool {
         switch self {
-        case .expired, .today, .tomorrow, .days: true
-        case .later, .none: false
+        case .today, .tomorrow, .days: true
+        case .expired, .later, .none: false
         }
     }
 
