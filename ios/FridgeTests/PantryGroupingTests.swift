@@ -115,6 +115,18 @@ final class PantryGroupingTests: XCTestCase {
         XCTAssertEqual(groups.map(\.name), ["Apple", "banana", "zucchini"])
     }
 
+    func testSearchPutsExactMatchFirst() {
+        let items = [
+            item("TEST item 250", ingredient: 1, expires: "2026-11-05 23:59:59"),
+            item("TEST item 25", ingredient: 2, expires: "2027-01-29 23:59:59"),
+            item("TEST item 251", ingredient: 3, expires: "2026-11-06 23:59:59"),
+            item("Old TEST item 25", ingredient: 4, expires: "2026-11-04 23:59:59"),
+        ]
+        let names = PantryGrouping.searchResults(items, search: "test item 25").map(\.name)
+        XCTAssertEqual(names, ["TEST item 25", "TEST item 250", "TEST item 251", "Old TEST item 25"],
+                       "exact, then starts-with (by expiry), then contains")
+    }
+
     func testSearchIsCaseAndAccentInsensitive() {
         let items = [item("Jalapeño", ingredient: 21, expires: nil), item("milk", ingredient: 39, expires: nil)]
         XCTAssertEqual(PantryGrouping.filter(items, search: "jalapeno").map(\.displayName), ["Jalapeño"])

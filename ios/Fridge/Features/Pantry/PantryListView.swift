@@ -100,7 +100,7 @@ struct PantryListView: View {
     @ViewBuilder
     private var listSections: some View {
         if isSearching {
-            let found = PantryGrouping.groups(PantryGrouping.filter(items, search: search), sort: sort)
+            let found = PantryGrouping.searchResults(items, search: search, sort: sort)
             if found.isEmpty {
                 Text("No items match \u{201C}\(search)\u{201D}").foregroundStyle(.secondary)
             } else {

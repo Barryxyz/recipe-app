@@ -117,6 +117,22 @@ enum PantryGrouping {
         }
     }
 
+    /// Search results: exact name matches first, then names starting with the text, then the
+    /// rest, each tier in the usual order. Without this, "TEST item 25" could sit below
+    /// "TEST item 250…259" because it expires later.
+    static func searchResults(_ items: [PantryItem], search: String, sort: PantrySort = .expiry) -> [PantryGroup] {
+        let q = search.trimmingCharacters(in: .whitespaces)
+        let groups = Self.groups(filter(items, search: q), sort: sort)
+        func rank(_ g: PantryGroup) -> Int {
+            let opts: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+            if g.items.contains(where: { $0.displayName.trimmingCharacters(in: .whitespaces).compare(q, options: opts) == .orderedSame }) { return 0 }
+            if g.items.contains(where: { $0.displayName.range(of: q, options: opts.union(.anchored)) != nil }) { return 1 }
+            return 2
+        }
+        let ranked = groups.enumerated().map { (rank: rank($0.element), index: $0.offset, group: $0.element) }
+        return ranked.sorted { ($0.rank, $0.index) < ($1.rank, $1.index) }.map(\.group)
+    }
+
     /// Case- and accent-insensitive name filter across all locations.
     static func filter(_ items: [PantryItem], search: String) -> [PantryItem] {
         let q = search.trimmingCharacters(in: .whitespaces)
