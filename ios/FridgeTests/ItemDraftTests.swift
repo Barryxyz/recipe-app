@@ -33,6 +33,37 @@ final class ItemDraftTests: XCTestCase {
         XCTAssertNil(d.chosenExpiry)
     }
 
+    func testSpicesAndCatalogStaplesDefaultToStaple() {
+        var d = ItemDraft()
+        d.pick(choice("spices", unit: "g"), sessionLocation: nil)
+        XCTAssertTrue(d.isStaple)
+        XCTAssertNil(d.quantity, "staples default to \"some\"")
+        XCTAssertTrue(d.expiryOverridden)
+        XCTAssertNil(d.chosenExpiry, "and no expiry")
+
+        d.pick(choice("oils", unit: "ml"), sessionLocation: nil, stapleIds: [42])
+        XCTAssertTrue(d.isStaple, "olive oil is a catalog staple")
+
+        d.pick(choice("dairy"), sessionLocation: nil, stapleIds: [])
+        XCTAssertFalse(d.isStaple)
+        XCTAssertEqual(d.quantity, 1)
+        XCTAssertFalse(d.expiryOverridden, "regular items use the expiry rule")
+    }
+
+    func testStapleToggle() {
+        var d = ItemDraft()
+        d.pick(choice("dairy"), sessionLocation: nil)
+        d.setStaple(true)
+        XCTAssertTrue(d.canAdd, "a staple with no amount and no date can be added")
+        d.quantity = 500
+        d.overrideExpiry(Date(timeIntervalSince1970: 1_900_000_000))
+        XCTAssertTrue(d.canAdd, "amount and date are optional, not forbidden")
+        d.setStaple(false)
+        XCTAssertEqual(d.quantity, 1)
+        XCTAssertFalse(d.expiryOverridden)
+        XCTAssertNil(d.chosenExpiry)
+    }
+
     func testSessionLocationWinsOverCategory() {
         var d = ItemDraft()
         d.pick(choice("produce"), sessionLocation: .freezer)

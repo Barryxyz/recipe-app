@@ -11,6 +11,11 @@ enum PantryDefaults {
         default: .fridge
         }
     }
+
+    /// Seasoning & Staples by default: spices and the catalog's common staples.
+    static func isStaple(_ choice: IngredientChoice, stapleIds: Set<Int64>) -> Bool {
+        choice.category == "spices" || stapleIds.contains(choice.id)
+    }
 }
 
 /// The add/edit form's state, kept free of UI and networking so it can be unit tested.
@@ -24,18 +29,32 @@ struct ItemDraft: Equatable {
     var chosenExpiry: Date?
     /// True when the user set the date (or chose "no expiry") for this item only.
     var expiryOverridden = false
+    /// Seasoning & Staples item: defaults to "some" and no expiry.
+    var isStaple = false
 
     var isSome: Bool { quantity == nil }
 
     /// Picking an ingredient fills in unit, quantity 1 and location. `sessionLocation` is the
     /// location last used in this sheet, which wins over the category default.
-    mutating func pick(_ choice: IngredientChoice, sessionLocation: StorageLocation?) {
+    /// `stapleIds` are the catalog's common staples; spices count as staples too.
+    mutating func pick(_ choice: IngredientChoice, sessionLocation: StorageLocation?, stapleIds: Set<Int64> = []) {
         ingredient = choice
         unit = MeasureUnit(catalogUnit: choice.defaultUnit)
-        quantity = 1
         location = sessionLocation ?? PantryDefaults.location(forCategory: choice.category)
+        setStaple(PantryDefaults.isStaple(choice, stapleIds: stapleIds))
+    }
+
+    /// On: "some" and no expiry (both still editable). Off: 1 and the expiry rule (F1.6).
+    mutating func setStaple(_ on: Bool) {
+        isStaple = on
         chosenExpiry = nil
-        expiryOverridden = false
+        if on {
+            quantity = nil
+            expiryOverridden = true
+        } else {
+            quantity = 1
+            expiryOverridden = false
+        }
     }
 
     mutating func increment() {

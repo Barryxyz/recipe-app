@@ -25,6 +25,7 @@ struct ItemFormView: View {
     @State private var userDefaults: [ExpiryCalculator.DefaultKey: Int] = [:]
 
     @State private var sessionLocation: StorageLocation?
+    @State private var stapleIds: Set<Int64> = []
     @State private var addedCount = 0
     @State private var lastAdded: String?
 
@@ -151,6 +152,14 @@ struct ItemFormView: View {
                     .font(.subheadline)
             }
 
+            Toggle(isOn: Binding(get: { draft.isStaple }, set: { draft.setStaple($0) })) {
+                VStack(alignment: .leading) {
+                    Text("Seasoning or staple")
+                    Text("Listed in Seasoning & Staples. Amount and date are optional.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+
             Toggle("Some (no exact amount)", isOn: Binding(get: { draft.isSome }, set: { draft.setSome($0) }))
 
             if !draft.isSome {
@@ -270,10 +279,11 @@ struct ItemFormView: View {
             draft = ItemDraft(ingredient: choice, quantity: item.quantity,
                               unit: MeasureUnit(catalogUnit: item.unit), location: item.location,
                               chosenExpiry: item.expiryOverridden ? item.expiresAt : nil,
-                              expiryOverridden: item.expiryOverridden)
+                              expiryOverridden: item.expiryOverridden, isStaple: item.isStaple)
         } else {
             recent = (try? await PantryAPI.recentIngredients()) ?? []
             searchFocused = true
+            stapleIds = (try? await PantryAPI.catalogStapleIds()) ?? []
         }
         userDefaults = await defaults ?? [:]
     }
@@ -302,7 +312,7 @@ struct ItemFormView: View {
             if !draft.expiryOverridden { draft.chosenExpiry = nil }
             changingIngredient = false
         } else {
-            draft.pick(choice, sessionLocation: sessionLocation)
+            draft.pick(choice, sessionLocation: sessionLocation, stapleIds: stapleIds)
         }
         query = ""
         results = []

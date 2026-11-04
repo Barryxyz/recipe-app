@@ -46,14 +46,15 @@ final class PrefsDraftTests: XCTestCase {
         XCTAssertEqual(d.prefs.defaultServings, 20, "matches the database check (1-20)")
     }
 
-    func testStaplesNoDuplicates() {
+    func testStaplesNoDuplicatesAndNotStoredInPrefs() {
         var d = PrefsDraft()
         d.addStaple(salt)
         d.addStaple(oil)
         d.addStaple(salt)
-        XCTAssertEqual(d.prefs.stapleIngredientIds, [77, 85])
+        XCTAssertEqual(d.staples.map(\.id), [77, 85])
         d.removeStaple(77)
-        XCTAssertEqual(d.prefs.stapleIngredientIds, [85])
+        XCTAssertEqual(d.staples.map(\.id), [85])
+        XCTAssertEqual(d.prefs.stapleIngredientIds, [], "staples are pantry items now, not prefs")
     }
 
     func testRoundTripThroughStoredPrefs() {
@@ -85,8 +86,11 @@ final class PrefsDraftTests: XCTestCase {
     func testOnboardingSkippedOnlyWhenPrefsWereSet() {
         let empty = UserPrefs(diets: [], allergens: [], stapleIngredientIds: [], defaultServings: 2)
         XCTAssertFalse(OnboardingState.prefsLookConfigured(empty))
-        var withStaples = empty
-        withStaples.stapleIngredientIds = [77]
-        XCTAssertTrue(OnboardingState.prefsLookConfigured(withStaples))
+        var changed = empty
+        changed.defaultServings = 4
+        XCTAssertTrue(OnboardingState.prefsLookConfigured(changed))
+        changed = empty
+        changed.allergens = ["sesame"]
+        XCTAssertTrue(OnboardingState.prefsLookConfigured(changed))
     }
 }

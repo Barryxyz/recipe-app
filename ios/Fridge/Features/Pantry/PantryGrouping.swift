@@ -121,6 +121,23 @@ enum PantryGrouping {
         }
     }
 
+    /// Splits a list into the pantry's sections: Expired (anything past its date, staples
+    /// included), Seasoning & Staples (the rest of the staples), and everything else.
+    static func sections(_ items: [PantryItem], now: Date = .now, calendar: Calendar = .current)
+        -> (expired: [PantryItem], staples: [PantryItem], regular: [PantryItem]) {
+        var expired: [PantryItem] = [], staples: [PantryItem] = [], regular: [PantryItem] = []
+        for item in items {
+            if ExpiryBadge(expiresAt: item.expiresAt, now: now, calendar: calendar).isExpired {
+                expired.append(item)
+            } else if item.isStaple {
+                staples.append(item)
+            } else {
+                regular.append(item)
+            }
+        }
+        return (expired, staples, regular)
+    }
+
     /// Search results: exact name matches first, then names starting with the text, then the
     /// rest, each tier in the usual order. Without this, "TEST item 25" could sit below
     /// "TEST item 250…259" because it expires later.

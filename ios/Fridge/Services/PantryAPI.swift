@@ -29,7 +29,7 @@ enum PantryAPI {
             unit: draft.unit.rawValue, location: draft.location,
             expiryOverridden: draft.expiryOverridden,
             expiresAt: draft.expiryOverridden ? .some(draft.chosenExpiry) : nil,
-            source: .manual)
+            source: .manual, isStaple: draft.isStaple)
         return try await app.from("pantry_items")
             .insert(row, returning: .representation)
             .select(PantryItem.columns)
@@ -47,7 +47,7 @@ enum PantryAPI {
             unit: draft.unit.rawValue, location: draft.location,
             expiryOverridden: draft.expiryOverridden,
             expiresAt: draft.expiryOverridden ? .some(draft.chosenExpiry) : nil,
-            source: nil)
+            source: nil, isStaple: draft.isStaple)
         return try await app.from("pantry_items")
             .update(row)
             .eq("id", value: id)
@@ -76,6 +76,36 @@ enum PantryAPI {
             .update(["deleted_at": ISO8601DateFormatter().string(from: .now)])
             .eq("id", value: id)
             .execute()
+    }
+
+    /// Adds staples (onboarding), skipping ingredients the household already has as a staple.
+    /// "some", no expiry.
+    static func addStaples(_ choices: [IngredientChoice]) async throws {
+        guard !choices.isEmpty else { return }
+        struct Row: Decodable { let ingredient_id: Int64? }
+        let existing: [Row] = try await app.from("pantry_items")
+            .select("ingredient_id")
+            .eq("is_staple", value: true)
+            .eq("status", value: PantryItem.Status.active.rawValue)
+            .is("deleted_at", value: nil)
+            .execute()
+            .value
+        let have = Set(existing.compactMap(\.ingredient_id))
+        let rows: [ItemWrite] = choices.filter { !have.contains($0.id) }.map { c in
+            var d = ItemDraft()
+            d.pick(c, sessionLocation: nil)
+            d.setStaple(true)
+            return ItemWrite(ingredientId: c.id, displayName: c.name, quantity: nil, unit: d.unit.rawValue,
+                             location: d.location, expiryOverridden: true, expiresAt: .some(nil),
+                             source: .manual, isStaple: true)
+        }
+        guard !rows.isEmpty else { return }
+        try await app.from("pantry_items").insert(rows).execute()
+    }
+
+    /// Catalog ids of the common staples, so the add sheet can switch "Staple" on for them.
+    static func catalogStapleIds() async throws -> Set<Int64> {
+        Set(try await PrefsAPI.catalogStaples().map(\.id))
     }
 
     // MARK: Ingredients
@@ -246,10 +276,12 @@ private struct ItemWrite: Encodable {
     /// nil = leave to the server; .some(nil) = no expiry; .some(date) = user's date.
     let expiresAt: Date??
     let source: PantryItem.Source?
+    let isStaple: Bool
 
     enum CodingKeys: String, CodingKey {
         case ingredientId = "ingredient_id", displayName = "display_name", quantity, unit, location
         case expiryOverridden = "expiry_overridden", expiresAt = "expires_at", source
+        case isStaple = "is_staple"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -264,6 +296,7 @@ private struct ItemWrite: Encodable {
             if let date { try c.encode(date, forKey: .expiresAt) } else { try c.encodeNil(forKey: .expiresAt) }
         }
         if let source { try c.encode(source, forKey: .source) }
+        try c.encode(isStaple, forKey: .isStaple)
     }
 }
 

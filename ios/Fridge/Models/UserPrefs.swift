@@ -64,6 +64,7 @@ struct UserPrefs: Codable, Equatable {
     var diets: [String]
     /// Catalog allergen tags plus free-text "Other" entries (lowercased).
     var allergens: [String]
+    /// Deprecated: staples are pantry items now (is_staple). Always written empty.
     var stapleIngredientIds: [Int64]
     var defaultServings: Int
 
@@ -85,6 +86,7 @@ struct PrefsDraft: Equatable {
     var allergies: Set<AllergyChoice> = []
     /// Free text, comma-separated: "mustard, celery".
     var otherAllergies = ""
+    /// Onboarding's staples screen: becomes Seasoning & Staples pantry items on Finish.
     var staples: [IngredientChoice] = []
     var servings = 2
 
@@ -114,7 +116,7 @@ struct PrefsDraft: Equatable {
         return UserPrefs(
             diets: Diet.allCases.filter(diets.contains).map(\.rawValue),
             allergens: tags + otherAllergyList,
-            stapleIngredientIds: staples.map(\.id),
+            stapleIngredientIds: [],
             defaultServings: Self.clampServings(servings))
     }
 

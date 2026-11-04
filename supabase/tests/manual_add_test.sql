@@ -83,6 +83,23 @@ begin
     if t2 is null then failures := array_append(failures, 'status_changed_at not set on Discard'::text); end if;
   end;
 
+  -- Staples (Seasoning & Staples): "some" and no expiry stay that way.
+  declare
+    st uuid;
+    e timestamptz;
+    q numeric;
+  begin
+    insert into app.pantry_items (ingredient_id, display_name, quantity, unit, location, source,
+                                  is_staple, expiry_overridden, expires_at)
+    values (77, 'salt', null, 'g', 'pantry', 'manual', true, true, null)
+    returning id, expires_at, quantity into st, e, q;
+    if e is not null or q is not null then
+      failures := array_append(failures, format('staple got a date or amount: %s / %s', e, q));
+    end if;
+    update app.pantry_items set location = 'fridge' where id = st returning expires_at into e;
+    if e is not null then failures := array_append(failures, 'moving a staple gave it a date'::text); end if;
+  end;
+
   -- Bad names are rejected.
   begin
     perform app.get_or_create_custom_ingredient('   ');

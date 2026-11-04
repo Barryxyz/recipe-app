@@ -125,9 +125,9 @@ struct PantryListView: View {
         } else {
             switch tab {
             case .all:
-                let (expired, fresh) = splitExpired(items)
-                expiredSection(expired)
-                let groups = PantryGrouping.groups(fresh, sort: sort)
+                let parts = PantryGrouping.sections(items)
+                expiredSection(parts.expired)
+                let groups = PantryGrouping.groups(parts.regular, sort: sort)
                 let soon = groups.filter { $0.badge().isUseSoon }
                 if !soon.isEmpty {
                     Section {
@@ -149,27 +149,30 @@ struct PantryListView: View {
                         Section(loc.title) { rows(rest, showLocation: false) }
                     }
                 }
+                staplesSection(parts.staples)
             case .location(let loc):
                 let here = items.filter { $0.location == loc }
-                let (expired, fresh) = splitExpired(here)
+                let parts = PantryGrouping.sections(here)
                 if here.isEmpty {
                     Text("Nothing in the \(loc.title.lowercased()) yet.").foregroundStyle(.secondary)
                 } else {
-                    expiredSection(expired)
-                    let groups = PantryGrouping.groups(fresh, sort: sort)
+                    expiredSection(parts.expired)
+                    let groups = PantryGrouping.groups(parts.regular, sort: sort)
                     if !groups.isEmpty { Section { rows(groups, showLocation: false) } }
+                    staplesSection(parts.staples)
                 }
             }
         }
     }
 
-    /// Expired batches are split from fresh ones, so a group with one expired and one fresh
-    /// carton shows the expired one under Expired and the fresh one where it belongs.
-    private func splitExpired(_ list: [PantryItem]) -> (expired: [PantryItem], fresh: [PantryItem]) {
-        let now = Date.now
-        let expired = list.filter { ExpiryBadge(expiresAt: $0.expiresAt, now: now).isExpired }
-        let ids = Set(expired.map(\.id))
-        return (expired, list.filter { !ids.contains($0.id) })
+    /// Seasoning & Staples: always last, since it's checked least. A–Z, no badges unless dated.
+    @ViewBuilder
+    private func staplesSection(_ staples: [PantryItem]) -> some View {
+        if !staples.isEmpty {
+            Section("Seasoning & Staples (\(staples.count))") {
+                rows(PantryGrouping.groups(staples, sort: .name), showLocation: false)
+            }
+        }
     }
 
     /// Shown only when something has expired. "Discard all" asks first and can be undone.

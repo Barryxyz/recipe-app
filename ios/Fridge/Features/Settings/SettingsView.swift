@@ -45,7 +45,10 @@ struct FoodPrefsView: View {
             if loaded {
                 Section("Diet") { DietPicker(draft: $draft) }
                 Section("Allergies") { AllergyPicker(draft: $draft) }
-                Section("Staples") { StaplesEditor(draft: $draft) }
+                Section {
+                    Text("Staples and seasonings are in your pantry, in Seasoning & Staples at the bottom.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Section("Recipes") { ServingsStepper(draft: $draft) }
             } else {
                 ProgressView()
@@ -65,8 +68,7 @@ struct FoodPrefsView: View {
         }
         .task {
             guard let prefs = try? await PrefsAPI.load(userId: user.id) else { status = "Couldn't load"; return }
-            let staples = (try? await PrefsAPI.ingredients(prefs.stapleIngredientIds)) ?? []
-            draft = PrefsDraft(prefs, staples: staples)
+            draft = PrefsDraft(prefs, staples: [])
             saved = draft
             loaded = true
         }

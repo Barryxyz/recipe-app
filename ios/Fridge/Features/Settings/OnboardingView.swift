@@ -25,7 +25,7 @@ struct OnboardingView: View {
                         header("Any allergies?", "Recipes will leave these out.")
                         AllergyPicker(draft: $draft)
                     default:
-                        header("Do you usually have these?", "Staples count as available in every recipe.")
+                        header("Do you usually have these?", "They go in Seasoning & Staples at the bottom of your pantry. No amounts or dates needed.")
                         StaplesEditor(draft: $draft)
                         Divider()
                         ServingsStepper(draft: $draft)
@@ -93,6 +93,7 @@ struct OnboardingView: View {
         defer { saving = false }
         do {
             try await PrefsAPI.save(draft.prefs, userId: user.id)
+            try await PantryAPI.addStaples(draft.staples)
             OnboardingState.markDone(for: user.id)
             onFinish()
         } catch {
@@ -111,6 +112,6 @@ enum OnboardingState {
 
     /// Preferences that show the user already went through onboarding (e.g. before a reinstall).
     static func prefsLookConfigured(_ prefs: UserPrefs) -> Bool {
-        !prefs.diets.isEmpty || !prefs.allergens.isEmpty || !prefs.stapleIngredientIds.isEmpty
+        !prefs.diets.isEmpty || !prefs.allergens.isEmpty || prefs.defaultServings != 2
     }
 }

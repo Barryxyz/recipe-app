@@ -97,6 +97,20 @@ final class PantryGroupingTests: XCTestCase {
         XCTAssertFalse(single.isGroup)
     }
 
+    func testSectionsSplitExpiredStaplesAndRegular() {
+        let now = local("2026-11-04 12:00:00")
+        var salt = item("salt", ingredient: 77, location: .pantry, qty: nil, expires: nil)
+        salt.isStaple = true
+        var oldFlour = item("flour", ingredient: 71, location: .pantry, expires: "2026-11-01 23:59:59")
+        oldFlour.isStaple = true
+        let milk = item("milk", ingredient: 39, expires: "2026-11-06 23:59:59")
+        let oldEggs = item("eggs", ingredient: 38, expires: "2026-11-02 23:59:59")
+        let parts = PantryGrouping.sections([salt, oldFlour, milk, oldEggs], now: now, calendar: la)
+        XCTAssertEqual(Set(parts.expired.map(\.displayName)), ["flour", "eggs"], "a dated staple can expire too")
+        XCTAssertEqual(parts.staples.map(\.displayName), ["salt"])
+        XCTAssertEqual(parts.regular.map(\.displayName), ["milk"])
+    }
+
     // MARK: Sorting & search
 
     func testSortByEarliestExpiryNoExpiryLast() {

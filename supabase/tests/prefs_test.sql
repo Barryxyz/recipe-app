@@ -31,7 +31,6 @@ begin
   update app.user_prefs
      set diets = array['vegan','gluten_free'],
          allergens = array['peanuts','wheat','gluten','mustard'],
-         staple_ingredient_ids = (select array_agg(id order by name) from catalog.ingredients where is_common_staple),
          default_servings = 4
    where user_id = a;
   get diagnostics n = row_count;
@@ -41,13 +40,11 @@ begin
     failures := array_append(failures, format('prefs not saved as sent: %s', p));
   end if;
 
-  -- Staples: the catalog has at least 13, including the ones added for F1.7.
+  -- Staples: the catalog's 13 common staples include the ones added for F1.7. (Users' staples
+  -- are pantry items with is_staple since 2026-11-04; see manual_add_test.sql.)
   select count(*) into n from catalog.ingredients
    where is_common_staple and name in ('butter','garlic powder','onion powder','baking soda','baking powder','white vinegar','soy sauce');
   if n <> 7 then failures := array_append(failures, format('%s of 7 new staples marked in the catalog', n)); end if;
-  if cardinality(p.staple_ingredient_ids) < 13 then
-    failures := array_append(failures, format('only %s staples saved', cardinality(p.staple_ingredient_ids)));
-  end if;
 
   -- Servings must stay within 1-20.
   begin
