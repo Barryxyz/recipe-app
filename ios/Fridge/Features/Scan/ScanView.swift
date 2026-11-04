@@ -259,7 +259,7 @@ struct ScanView: View {
     }
 }
 
-/// F1.1 placeholder until the review screen (F1.3): what the server received.
+/// Temporary results until the review screen (F1.3): what the scan found. Nothing is saved.
 private struct ScanReceivedView: View {
     let response: ScanAPI.Response
     let done: () -> Void
@@ -267,28 +267,53 @@ private struct ScanReceivedView: View {
     var body: some View {
         List {
             Section {
-                Label("Received \(response.images.count) photo\(response.images.count == 1 ? "" : "s") for \(response.location)",
-                      systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text("Ingredient detection arrives in the next step (F1.2). Nothing was added to your pantry.")
+                if response.items.isEmpty {
+                    Label("No food found in these photos", systemImage: "questionmark.circle")
+                } else {
+                    Label("Found \(response.items.count) item\(response.items.count == 1 ? "" : "s")",
+                          systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
+                Text("Review and saving arrive in the next step (F1.3). Nothing was added to your pantry.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Section("Photos as the server saw them") {
-                ForEach(response.images, id: \.index) { img in
-                    HStack {
-                        Text("Photo \(img.index + 1)")
-                        Spacer()
-                        VStack(alignment: .trailing) {
-                            Text("\(img.width)×\(img.height) · \(img.bytes / 1000) KB")
-                            Text(img.has_metadata ? "Has metadata!" : "No metadata")
-                                .font(.caption)
-                                .foregroundStyle(img.has_metadata ? .red : .green)
+            if !response.items.isEmpty {
+                Section("Detected") {
+                    ForEach(response.items) { item in
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(item.display_name)
+                                    if item.low_confidence {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundStyle(.orange).font(.caption)
+                                            .accessibilityLabel("Unsure")
+                                    }
+                                }
+                                Text(detail(item)).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(QuantityFormat.string(item.quantity, unit: item.unit))
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
             }
             Section { Button("Done", action: done) }
         }
-        .navigationTitle("Scan received")
+        .navigationTitle("Scan results")
+    }
+
+    private func detail(_ item: ScanAPI.DraftItem) -> String {
+        var parts: [String] = []
+        switch item.match {
+        case "exact", "alias": parts.append(item.display_name == item.name ? "matched" : "seen as \u{201C}\(item.name)\u{201D}")
+        case "fuzzy": parts.append("closest match for \u{201C}\(item.name)\u{201D}")
+        default: parts.append("not in catalog")
+        }
+        parts.append("\(Int((item.confidence * 100).rounded()))% sure")
+        if item.suggest_staple { parts.append("staple") }
+        if item.photo_indexes.count > 1 { parts.append("in \(item.photo_indexes.count) photos") }
+        return parts.joined(separator: " · ")
     }
 }

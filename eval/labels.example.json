@@ -1,0 +1,16 @@
+{
+  "_comment": "Copy to eval/labels.json. One entry per scan: the photo files (in eval/photos/, max 4, same shelf area), the location, and what's really there. Use catalog names where you can (e.g. 'egg', 'milk', 'green onion'). quantity/unit are optional; give them when you know them, for the quantity-error metric. tidy: true for neat shelves (the 80% / 90% target applies to those).",
+  "scans": [
+    {
+      "id": "fridge-top-shelf",
+      "location": "fridge",
+      "tidy": true,
+      "photos": ["fridge-top-1.jpg", "fridge-top-2.jpg"],
+      "items": [
+        { "name": "egg", "quantity": 12, "unit": "each" },
+        { "name": "milk", "quantity": 1000, "unit": "ml" },
+        { "name": "cheddar cheese" }
+      ]
+    }
+  ]
+}

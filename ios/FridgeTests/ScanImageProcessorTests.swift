@@ -114,6 +114,22 @@ final class ScanImageProcessorTests: XCTestCase {
         XCTAssertEqual(ScanAPI.map(code: 504, data: Data()), .failed("http 504"))
     }
 
+    func testDecodesScanResponse() throws {
+        let json = #"""
+        {"location":"fridge","items":[{"temp_id":"t1","name":"eggs","ingredient_id":38,"display_name":"egg",
+          "category":"dairy","match":"alias","quantity":6,"unit":"each","confidence":0.92,"low_confidence":false,
+          "suggest_staple":false,"photo_indexes":[0,1]},
+          {"temp_id":"t2","name":"dragon fruit","ingredient_id":null,"display_name":"dragon fruit","category":null,
+          "match":"none","quantity":null,"unit":null,"confidence":0.55,"low_confidence":true,
+          "suggest_staple":false,"photo_indexes":[1]}]}
+        """#
+        let r = try JSONDecoder().decode(ScanAPI.Response.self, from: Data(json.utf8))
+        XCTAssertEqual(r.items.count, 2)
+        XCTAssertEqual(r.items[0].ingredient_id, 38)
+        XCTAssertNil(r.items[1].quantity, "\"some\"")
+        XCTAssertTrue(r.items[1].low_confidence)
+    }
+
     func testPlacementsIncludeStaples() {
         XCTAssertEqual(Placement.allCases.map(\.rawValue), ["fridge", "freezer", "pantry", "staples"],
                        "the server accepts exactly these locations")

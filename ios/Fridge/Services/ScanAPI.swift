@@ -8,20 +8,26 @@ enum ScanAPI {
         let images: [String]
     }
 
-    /// F1.1 placeholder response: what the server received. F1.2 adds detected items.
+    /// One detected item (F1.2), a draft for the review screen (F1.3).
+    struct DraftItem: Decodable, Equatable, Identifiable {
+        let temp_id: String
+        let name: String
+        let ingredient_id: Int64?
+        let display_name: String
+        let category: String?
+        let match: String
+        let quantity: Double?
+        let unit: String?
+        let confidence: Double
+        let low_confidence: Bool
+        let suggest_staple: Bool
+        let photo_indexes: [Int]
+        var id: String { temp_id }
+    }
+
     struct Response: Decodable, Equatable {
-        struct ImageReport: Decodable, Equatable {
-            let index: Int
-            let bytes: Int
-            let width: Int
-            let height: Int
-            let has_exif: Bool
-            let has_metadata: Bool
-            let within_limits: Bool
-        }
-        let placeholder: Bool?
         let location: String
-        let images: [ImageReport]
+        let items: [DraftItem]
     }
 
     enum ScanError: LocalizedError, Equatable {
