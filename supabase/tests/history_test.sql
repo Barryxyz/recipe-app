@@ -29,14 +29,15 @@ begin
 
   -- A, October 2026 (Los Angeles): 6 used, 2 thrown out; one more thrown out in September.
   insert into app.pantry_items (household_id, added_by, ingredient_id, display_name, location, source, status, status_changed_at, added_at)
-  select ha, a, 38, 'egg', 'fridge', 'manual', 'used', '2026-10-0' || g || 'T18:00:00Z', '2026-09-20T18:00:00Z'
+  select ha, a, 38, 'egg', 'fridge', 'manual', 'used', ('2026-10-0' || g || 'T18:00:00Z')::timestamptz, '2026-09-20T18:00:00Z'
     from generate_series(1, 6) g;
   insert into app.pantry_items (household_id, added_by, ingredient_id, display_name, location, source, status, status_changed_at, added_at) values
     (ha, a, 24, 'spinach', 'fridge', 'manual', 'discarded', '2026-10-10T18:00:00Z', '2026-10-01T18:00:00Z'),
     (ha, a, 24, 'spinach', 'fridge', 'manual', 'discarded', '2026-10-20T18:00:00Z', '2026-10-12T18:00:00Z'),
     (ha, a, 39, 'milk',    'fridge', 'manual', 'discarded', '2026-09-15T18:00:00Z', '2026-09-01T18:00:00Z'),
-    -- 07:30 UTC on Nov 1 is still Oct 31 in Los Angeles: counts for October there, November in UTC.
-    (ha, a, 39, 'milk',    'fridge', 'manual', 'used',      '2026-11-01T07:30:00Z', '2026-10-25T18:00:00Z'),
+    -- 06:30 UTC on Nov 1 is 23:30 on Oct 31 in Los Angeles (still UTC-7: DST ends later that night):
+    -- counts for October there, November in UTC.
+    (ha, a, 39, 'milk',    'fridge', 'manual', 'used',      '2026-11-01T06:30:00Z', '2026-10-25T18:00:00Z'),
     -- Soft-deleted rows (Delete = mistake) never count.
     (ha, a, 24, 'spinach', 'fridge', 'manual', 'discarded', '2026-10-21T18:00:00Z', '2026-10-12T18:00:00Z');
   update app.pantry_items set deleted_at = now()
@@ -61,7 +62,7 @@ begin
 
   r := app.pantry_insights('2026-10-01', 'UTC');
   if (r->>'used')::int <> 6 then
-    failures := array_append(failures, format('October UTC should exclude the Nov 1 07:30Z item: %s', r->>'used'));
+    failures := array_append(failures, format('October UTC should exclude the Nov 1 06:30Z item: %s', r->>'used'));
   end if;
 
   -- Fewer than 5 items: no waste rate.
