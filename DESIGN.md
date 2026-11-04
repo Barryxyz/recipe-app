@@ -17,13 +17,13 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 - Let users write their own recipes (ingredients, description, steps) alongside AI-generated ones.
 - Build a shopping list from ingredients a recipe needs but the user doesn't have.
 - Support 100 users at launch, with an architecture that reaches 10,000 without a rewrite.
-- Sell the app as a one-time **$4.99 paid download** (D5).
+- **Free download with a subscription for AI features** (D5): the pantry is free; photo scanning and AI recipes need a monthly or yearly subscription.
 
 ### Non-goals (v1)
 - Android or web app (a web page exists only to view shared recipes).
 - Barcode scanning (deferred, see §11).
 - Household / shared fridges (deferred; the schema is ready for it, see §5).
-- Meal planning, recipe images, subscriptions or in-app purchases (the app is a one-time paid download, D5).
+- Meal planning, recipe images, one-time purchases or tiers beyond free + one subscription (D5).
 
 ---
 
@@ -58,7 +58,8 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 | NFR-5 | The AI API key never ships in the app. |
 | NFR-6 | Saved pantry and recipes can be viewed offline. Manual entry works offline once the cache exists (v1), with changes queued for sync. Scanning and generation need a network connection. |
 | NFR-7 | In-app account deletion (App Store requirement). |
-| NFR-8 | AI features work only for accounts with a verified App Store purchase, so the public API key can't be used for free AI calls. |
+| NFR-8 | AI features work only for accounts with an active, server-verified App Store subscription, so the public API key can't be used for free AI calls. |
+| NFR-9 | Scans are limited per user (default 10 a day and 60 a month, set by function secrets) as a cost backstop; the camera screen shows what's left. |
 
 ---
 
@@ -70,17 +71,18 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 | D2 | Backend platform | **Supabase.** Free tier for the prototype, Pro ($25/month) for production | EC2 (days–weeks of setup and ongoing maintenance), Firebase (NoSQL conflicts with D1), CloudKit (can't run AI calls) |
 | D3 | AI models | **Hybrid:** Claude Sonnet 5.5 for photo scans, Claude Haiku 5.5 for recipe generation. Model is a config value. | Sonnet for everything (~6x cost), Haiku for everything (weaker scans), Opus 5.5 (~11x cost) |
 | D4 | v1 scope | **Shopping list included.** Barcode scanning and household sharing deferred. | — |
-| D5 | Business model | **Paid download, $4.99 one-time (US). No subscriptions, in-app purchases or per-user caps.** | Completely free (previous choice), free with caps, freemium subscription |
+| D5 | Business model | **Free download + subscription for AI (decided 2026-11-04).** Free: manual pantry, expiry, history, shopping list, writing recipes. Subscription (monthly or yearly; starting point to test: $2.99/month, $19.99/year): photo scanning and AI recipe generation, with generous per-user scan limits as a backstop (NFR-9). | $4.99 paid download (choice of 2026-11-02: revenue arrives once while AI costs continue); paid app + optional subscription (paying twice); subscription only (fewer people try it); completely free |
 | D6 | Share page hosting | **Cloudflare Worker (free tier) on the app's own domain (~$10–15/year).** It also serves the Universal Links file and the privacy policy. | Supabase Edge Function (serves HTML as plain text on the default domain; a custom domain is a paid add-on — check current Supabase docs) |
 
 ### Rationale
 - **D1:** Joins between recipes, ingredients and nutrition stay in one query. Each schema has its own permissions. Either schema can move to its own database later without changing app code.
 - **D2:** Postgres matches D1. Supabase provides auth (anonymous now, Sign in with Apple later), row-level security, and Edge Functions to relay AI calls. Prototype code carries straight into production.
 - **D3:** Scans are infrequent and accuracy is what users notice first, so they get the stronger vision model. Recipe generation is the frequent call. Server-side checks (§6.2) catch Haiku mistakes, with one retry on Sonnet if checks fail.
-- **D5:** One-time price of $4.99 in the US. Apple sets equivalent prices in other countries, and $5.00 is also an allowed price point. With the App Store Small Business Program (15% commission), each US sale nets about **$4.24**. Accepted risk: revenue arrives once, while AI and hosting costs continue (see §8). **Mitigation:**
-  - Set a monthly spend limit on the Anthropic account before inviting anyone besides the developer.
-  - Log token usage per user.
-  - AI functions only serve verified purchases (NFR-8, F0.6).
+- **D5:** AI costs recur every month, so revenue should too. The non-AI half of the app (pantry, expiry, history, shopping list) is useful on its own and costs almost nothing to run, which makes it a good free tier: more people try the app, and free users make no AI calls. Apple's commission is 15% under the Small Business Program (and 15% for any subscriber after their first year), so $2.99/month nets about $2.54 and $19.99/year about $17. Prices are a starting point; set them before launch from prototype usage (F5.2). **Mitigation for cost:**
+  - Per-user scan limits (NFR-9) and the `AI_ENABLED` kill switch.
+  - A monthly spend limit on the Anthropic account before inviting anyone besides the developer.
+  - Token usage logged per user (`ai_usage_log`).
+  - AI functions only serve active subscribers (NFR-8, F0.6).
 - **D6:** Universal Links need an `apple-app-site-association` file on a domain the app controls, and the share page must be served as real HTML. A Worker on our own domain does both for free.
 
 ---
@@ -110,7 +112,7 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 - **All AI calls go through Edge Functions.** The app never holds the API key.
 - **Photos** are resized on the device (longest edge ~1568px, JPEG), sent to `scan-ingredients`, forwarded to the model, and never written to storage or logs.
 - **Share page** (D6): a Cloudflare Worker on the app's own domain. It serves `/r/<token>` (reading the recipe through a Supabase function), the Universal Links file, and `/privacy`.
-- **Purchase check** (NFR-8): `verify-purchase` checks Apple's signed proof of purchase once per account. AI functions refuse accounts without it.
+- **Subscription check** (NFR-8): the server records each account's subscription expiry from Apple's signed transactions and App Store Server Notifications (renewals, cancellations, refunds). AI functions refuse accounts without an active subscription (F0.6).
 
 ---
 
@@ -341,8 +343,8 @@ Writing a recipe is free. The only AI cost is the one-time nutrition estimate fo
 | Macro accuracy | Calculated on the server from the catalog, never by the model |
 | Unknown ingredients | Private ingredient with estimated nutrition |
 | Share link behavior | Web page (D6) + Universal Link; the page shows the live recipe, and saving makes a copy; revocable |
-| AI cost and abuse | Paid download, no per-user caps (D5); account spend limit, per-user usage log |
-| Free AI through the public API key | AI functions require a verified App Store purchase (NFR-8, F0.6) |
+| AI cost and abuse | Subscription for AI features (D5), per-user scan limits (NFR-9), account spend limit, per-user usage log, kill switch |
+| Free AI through the public API key | AI functions require an active, server-verified subscription (NFR-8, F0.6) |
 | Photo privacy | Never stored or logged; stated in the privacy policy and App Store privacy labels |
 | Account deletion | In-app deletion removes all `app` rows and revokes share links |
 | Food safety | Safe-temperature rules in the prompt + disclaimer |
@@ -368,10 +370,19 @@ Prices: Claude Sonnet 5.5 at $2 / $10 per 1M input/output tokens, Haiku 5.5 at $
 Per call: scan ≈ $0.03, recipe set ≈ $0.003. **AI is the largest cost at every scale.**
 
 ### Revenue (D5)
-Net per US sale ≈ **$4.24** ($4.99 minus the 15% Small Business Program commission; EU prices include VAT, so they net less).
+Subscription, starting point to test: **$2.99/month** (≈ $2.54 net after Apple's 15%) or **$19.99/year** (≈ $17 net). Free users make no AI calls.
 
-| | 100 users | 10,000 users |
-|---|---|---|
+| Per subscriber per month | Amount |
+|---|---|
+| Net revenue | ≈ $1.40 (yearly) to $2.54 (monthly) |
+| Typical AI cost | ≈ $0.07–0.13 |
+| Worst case under the scan limits (60 scans ≈ $1.20, plus recipes) | ≈ $1.50 |
+
+Every subscriber covers their own AI cost, even at the limits, so costs grow with revenue rather than against it. Measured cost per scan in the prototype: about $0.02 (Sonnet 5.5, medium effort, 1–2 photos). Track cost per subscriber and conversion (F5.2) and set final prices before launch.
+
+*Previous model (2026-11-02 → 2026-11-04): a $4.99 paid download netting ≈ $4.24 once, with ongoing AI costs; replaced because one-time revenue doesn't match recurring cost.*
+
+---|---|---|
 | One-time revenue | ~$424 | ~$42,400 |
 | Monthly running cost (typical AI) | ~$43 | ~$760–1,420 |
 | Monthly running cost (worst-case AI) | ~$68 | ~$3,400 |
@@ -416,7 +427,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | F0.3 Schemas | `catalog` and `app` migrations, row-level security, 50-recipe trigger, households | M |
 | F0.4 Catalog seed | Import USDA FDC + FoodKeeper shelf lives, aliases, staples | L |
 | F0.5 AI functions | Edge Functions, structured output, validation, Sonnet retry, usage logging | M |
-| F0.6 Purchase verification | App Store purchase proof sent on sign-in, `verify-purchase` function, AI functions require it, sandbox allowed for TestFlight | S |
+| F0.6 Subscription verification | StoreKit 2 subscriptions, paywall, server-side entitlement (expiry) from signed transactions + App Store Server Notifications, AI functions require an active subscription, sandbox allowed for TestFlight | M |
 
 ### Phase 1 — Pantry
 | Feature | Stories | Size |
@@ -462,7 +473,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 |---|---|---|
 | F5.1 Expiry notifications | Daily local digest, settings | S |
 | F5.2 Observability | Crash reporting, product events, AI cost dashboard from `ai_usage_log` | S |
-| F5.3 App Store readiness | Paid Apps Agreement, tax and banking, Small Business Program, $4.99 price, privacy policy, privacy labels, disclaimer, TestFlight, account spend limit | M |
+| F5.3 App Store readiness | Paid Apps Agreement, tax and banking, Small Business Program, free app + subscription products (monthly, yearly), privacy policy, privacy labels, disclaimer, TestFlight, account spend limit | M |
 
 **Total v1 estimate:** ~12–16 weeks for one developer.
 
@@ -476,8 +487,8 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 5. User-contributed catalog entries (promote reviewed `ingredients_private` rows)
 6. Embedding-based ingredient matching if fuzzy matching isn't good enough
 7. Natural-language quick add ("2 eggs, half a gallon of milk") or voice entry, parsed by Haiku into manual-entry rows
-8. Revisit pricing (a price change, or an optional subscription for heavy users) if AI cost per purchaser approaches the ≈$4.24 net per sale (§8)
-9. App Store Server Notifications: remove AI access when a purchase is refunded
+8. Revisit subscription prices and scan limits from real usage (§8, F5.2)
+9. *(Moved into v1, F0.6: App Store Server Notifications are required for subscriptions.)*
 10. Import a recipe from a web link or a cookbook photo (AI-parsed into the recipe editor, F3.7)
 
 ---
@@ -487,8 +498,8 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 |---|---|
 | Scan accuracy on cluttered fridges | Main thing the prototype tests. Fallback: switch scans to a stronger model, or ask for photos per shelf. |
 | Haiku recipe quality | Prototype tests it; the retry on Sonnet limits bad output. Can switch recipes to Sonnet (~6x AI cost). |
-| One-time revenue vs. ongoing AI cost (D5) | Each sale nets ≈$4.24 once, while costs continue. Track cost per purchaser (F5.2); account spend limit as the backstop; revisit pricing if needed (§11). |
-| Paid download lowers adoption | Paid apps can't offer a free trial. Screenshots, the description and shared recipe pages have to sell it. Watch conversion in App Store Connect. |
-| Family Sharing | Paid apps can be shared with up to 6 family members, each with their own account, so one sale can mean several users' AI cost. Accepted; check in App Store Connect whether it can be turned off. |
+| Subscription conversion (D5) | Revenue depends on free users choosing to subscribe. The free pantry has to be good on its own; the paywall appears when a free user taps Scan or Recipes. Track conversion (F5.2); consider a free trial. |
+| Subscription billing edge cases | Renewals, grace periods, cancellations, refunds and Family Sharing (can be turned off per subscription product) come through App Store Server Notifications (F0.6). |
+| Family Sharing | Decide per subscription product in App Store Connect whether it's shareable; each family member's AI use counts against the same subscription's revenue. |
 | Quantity estimation from photos | Expected to be rough; the review screen and "some" quantities absorb errors. Manual entry is the fallback if scans disappoint. |
 | Pricing changes | Supabase and Claude prices were checked on 2026-06-02; re-check before budgeting. |

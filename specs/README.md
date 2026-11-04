@@ -11,7 +11,7 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 | [F0.3](F0.3-schemas.md) | Schemas | M | yes | F0.1 |
 | [F0.4](F0.4-catalog-seed.md) | Catalog seed | L | part (~100 items) | F0.3 |
 | [F0.5](F0.5-ai-functions.md) | AI functions | M | yes | F0.1, F0.3 |
-| [F0.6](F0.6-purchase-verification.md) | Purchase verification | S | no | F0.2, F0.3, F0.5 |
+| [F0.6](F0.6-purchase-verification.md) | Subscription verification | M | no (scan limits yes) | F0.2, F0.3, F0.5 |
 | [F1.1](F1.1-photo-scan.md) | Photo scan | M | yes | F0.2, F0.5 |
 | [F1.2](F1.2-ingredient-detection.md) | Ingredient detection | L | yes | F0.4, F0.5, F1.1 |
 | [F1.3](F1.3-scan-review.md) | Scan review | M | yes | F1.2, F1.5, F1.6 |
@@ -59,4 +59,4 @@ All recommendations below were accepted and are now in DESIGN.md (v1.2) and the 
 | 6 | `updated_at` and soft deletes on synced tables | DESIGN §5 · F0.3, F3.3, F3.6 |
 | 7 | `recipes.source` gains `'shared'` | DESIGN §5 · F4.3 |
 | 8 | "Only use what I have" generation option | DESIGN §6.2 · F2.1, F2.2 |
-| 9 | **$4.99 one-time paid download** (D5); AI only for verified purchases (NFR-8) | DESIGN §3, §8, §12 · F0.5, F0.6, F5.2, F5.3 |
+| 9 | ~~$4.99 one-time paid download~~ → **free app + subscription for AI** (D5, changed 2026-11-04); AI only for active subscribers (NFR-8); per-user scan limits (NFR-9) | DESIGN §3, §8, §12 · F0.5, F0.6, F5.2, F5.3 |
