@@ -46,6 +46,7 @@ An iOS app that tracks what's in your fridge — by photo or by manual entry —
 | FR-12 | Dietary preferences, allergens and pantry staples are taken into account when generating recipes. |
 | FR-13 | Add ingredients manually, without a photo: search the catalog or type free text, set quantity, unit, location and (optionally) expiry. Several items can be added in one session. Works on its own; no scan needed first. |
 | FR-14 | Write a recipe from scratch: title, description, servings, times, ingredients (catalog search or free text, with quantities) and steps. It is saved, edited, shared, cooked and counted toward the 50 limit like an AI recipe, and gets server-calculated macros. |
+| FR-15 | See the history of used and thrown-out items, with simple monthly numbers (items used, thrown out, waste rate, most thrown out, most bought). |
 
 ### Non-functional
 | ID | Requirement |
@@ -427,6 +428,7 @@ Sizes: S = 1–2 days, M = 3–5 days, L = 1–2 weeks (one developer).
 | F1.5 Manual add/edit | Add without scanning: catalog type-ahead, recent/frequent items, custom free-text items, "Add & next" batch entry, empty-state entry point; edit quantity/unit/expiry; used/discarded | M |
 | F1.6 Expiry rules | Defaults, per-item override, per-ingredient user default | S |
 | F1.7 Onboarding prefs | Diets, allergens, staples, default servings | S |
+| F1.8 History & waste | Used/thrown-out history with put back, monthly insights (waste rate, most thrown out, most bought) | S |
 
 ### Phase 2 — Recipe generation
 | Feature | Stories | Size |

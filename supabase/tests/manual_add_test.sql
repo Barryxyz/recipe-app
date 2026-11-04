@@ -63,6 +63,26 @@ begin
    where ingredient_id = id1 and quantity is null and source = 'manual' and expires_at is not null;
   if n <> 1 then failures := array_append(failures, 'manual custom pantry row not saved as expected'::text); end if;
 
+  -- status_changed_at (F1.8): set on Used/Discard, cleared on Undo, untouched by other edits,
+  -- and not settable by the client.
+  declare
+    item uuid;
+    t1 timestamptz;
+    t2 timestamptz;
+  begin
+    insert into app.pantry_items (display_name, source, status_changed_at)
+    values ('history test', 'manual', '2000-01-01') returning id, status_changed_at into item, t1;
+    if t1 is not null then failures := array_append(failures, 'client set status_changed_at on insert'::text); end if;
+    update app.pantry_items set status = 'used' where id = item returning status_changed_at into t1;
+    if t1 is null then failures := array_append(failures, 'status_changed_at not set on Used'::text); end if;
+    update app.pantry_items set quantity = 3, status_changed_at = '2000-01-01' where id = item returning status_changed_at into t2;
+    if t2 is distinct from t1 then failures := array_append(failures, 'status_changed_at changed by an unrelated edit'::text); end if;
+    update app.pantry_items set status = 'active' where id = item returning status_changed_at into t2;
+    if t2 is not null then failures := array_append(failures, 'status_changed_at not cleared on Undo'::text); end if;
+    update app.pantry_items set status = 'discarded' where id = item returning status_changed_at into t2;
+    if t2 is null then failures := array_append(failures, 'status_changed_at not set on Discard'::text); end if;
+  end;
+
   -- Bad names are rejected.
   begin
     perform app.get_or_create_custom_ingredient('   ');

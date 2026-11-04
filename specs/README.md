@@ -19,6 +19,7 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 | [F1.5](F1.5-manual-add-edit.md) | Manual add & edit | M | yes | F0.4, F1.6 |
 | [F1.6](F1.6-expiry-rules.md) | Expiry rules | S | yes | F0.3, F0.4 |
 | [F1.7](F1.7-onboarding-prefs.md) | Onboarding & prefs | S | yes | F0.2, F0.4 |
+| [F1.8](F1.8-history-and-waste.md) | History & waste | S | yes | F1.4, F1.5 |
 | [F2.1](F2.1-request-options.md) | Request options | S | yes | F1.4, F1.7 |
 | [F2.2](F2.2-generation-pipeline.md) | Generation pipeline | L | yes | F0.5, F1.7, F2.1, F2.3 |
 | [F2.3](F2.3-macros.md) | Macros | M | yes | F0.4, F0.5 |
@@ -40,7 +41,7 @@ One spec per feature in [DESIGN.md §10](../DESIGN.md#10-feature-breakdown-v1). 
 
 ## Suggested prototype build order
 1. **Foundation:** F0.1 → F0.3 → F0.4 (prototype seed) → F0.2 (anonymous) → F0.5
-2. **Pantry without AI:** F1.6 → F1.5 → F1.4 → F1.7. The app is already useful at this point, and it's the cheapest way to check the data model.
+2. **Pantry without AI:** F1.6 → F1.5 → F1.4 → F1.7 → F1.8. The app is already useful at this point, and it's the cheapest way to check the data model.
 3. **Scanning:** F1.1 → F1.2 (run the eval) → F1.3
 4. **Recipes:** F2.3 → F2.1 → F2.2 (run the eval) → F2.4
 5. **Recipe management and the rest:** F3.1 → F3.3 → F3.2 → F3.7 → F3.4 → F3.5 → F5.1 → F5.2 events
