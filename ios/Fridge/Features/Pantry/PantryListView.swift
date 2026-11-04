@@ -107,7 +107,7 @@ struct PantryListView: View {
         Picker("Location", selection: $tab) {
             Text("All \(items.count)").tag(Tab.all)
             ForEach(StorageLocation.allCases) { loc in
-                Text("\(loc.title) \(items.filter { $0.location == loc }.count)").tag(Tab.location(loc))
+                Text("\(loc.title) \(items.filter { $0.location == loc && !$0.isStaple }.count)").tag(Tab.location(loc))
             }
         }
         .pickerStyle(.segmented)
@@ -151,7 +151,8 @@ struct PantryListView: View {
                 }
                 staplesSection(parts.staples)
             case .location(let loc):
-                let here = items.filter { $0.location == loc }
+                // Staples have their own place (bottom of All), not a location tab.
+                let here = items.filter { $0.location == loc && !$0.isStaple }
                 let parts = PantryGrouping.sections(here)
                 if here.isEmpty {
                     Text("Nothing in the \(loc.title.lowercased()) yet.").foregroundStyle(.secondary)
@@ -159,13 +160,13 @@ struct PantryListView: View {
                     expiredSection(parts.expired)
                     let groups = PantryGrouping.groups(parts.regular, sort: sort)
                     if !groups.isEmpty { Section { rows(groups, showLocation: false) } }
-                    staplesSection(parts.staples)
                 }
             }
         }
     }
 
-    /// Seasoning & Staples: always last, since it's checked least. A–Z, no badges unless dated.
+    /// Seasoning & Staples: its own place, last on All since it's checked least. A–Z, no badges
+    /// unless dated.
     @ViewBuilder
     private func staplesSection(_ staples: [PantryItem]) -> some View {
         if !staples.isEmpty {
@@ -206,7 +207,8 @@ struct PantryListView: View {
                     withAnimation { toggle(group.id) }
                 } label: {
                     PantryRow(name: "\(group.name)  ×\(group.count)", amount: group.amountText,
-                              location: showLocation ? group.location : nil, badge: group.badge(),
+                              place: showLocation ? (group.earliest.isStaple ? "Staples" : group.location.title) : nil,
+                              badge: group.badge(),
                               chevron: expanded.contains(group.id) ? .expanded : .collapsed)
                 }
                 .foregroundStyle(.primary)
@@ -224,7 +226,7 @@ struct PantryListView: View {
     private func itemRow(_ item: PantryItem, showLocation: Bool, indented: Bool) -> some View {
         Button { editing = item } label: {
             PantryRow(name: item.displayName, amount: QuantityFormat.string(item.quantity, unit: item.unit),
-                      location: showLocation ? item.location : nil,
+                      place: showLocation ? (item.isStaple ? "Staples" : item.location.title) : nil,
                       badge: ExpiryBadge(expiresAt: item.expiresAt), chevron: nil)
                 .padding(.leading, indented ? 20 : 0)
         }
@@ -341,7 +343,8 @@ private struct PantryRow: View {
 
     let name: String
     let amount: String
-    let location: StorageLocation?
+    /// "Fridge", "Staples"… shown in mixed lists (search, Use these first, Expired).
+    let place: String?
     let badge: ExpiryBadge
     let chevron: Chevron?
 
@@ -349,7 +352,7 @@ private struct PantryRow: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                Text(location.map { "\(amount) · \($0.title)" } ?? amount)
+                Text(place.map { "\(amount) · \($0)" } ?? amount)
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()

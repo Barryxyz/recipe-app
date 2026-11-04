@@ -18,6 +18,40 @@ enum PantryDefaults {
     }
 }
 
+/// Where an item is listed: a storage location, or Seasoning & Staples (its own place in the
+/// pantry, user request 2026-11-04). Staples are stored as `is_staple` plus a hidden location.
+enum Placement: String, CaseIterable, Identifiable {
+    case fridge, freezer, pantry, staples
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .fridge: "Fridge"
+        case .freezer: "Freezer"
+        case .pantry: "Pantry"
+        case .staples: "Staples"
+        }
+    }
+
+    init(_ location: StorageLocation) {
+        switch location {
+        case .fridge: self = .fridge
+        case .freezer: self = .freezer
+        case .pantry: self = .pantry
+        }
+    }
+
+    var location: StorageLocation? {
+        switch self {
+        case .fridge: .fridge
+        case .freezer: .freezer
+        case .pantry: .pantry
+        case .staples: nil
+        }
+    }
+}
+
 /// The add/edit form's state, kept free of UI and networking so it can be unit tested.
 struct ItemDraft: Equatable {
     var ingredient: IngredientChoice?
@@ -34,14 +68,32 @@ struct ItemDraft: Equatable {
 
     var isSome: Bool { quantity == nil }
 
-    /// Picking an ingredient fills in unit, quantity 1 and location. `sessionLocation` is the
-    /// location last used in this sheet, which wins over the category default.
-    /// `stapleIds` are the catalog's common staples; spices count as staples too.
-    mutating func pick(_ choice: IngredientChoice, sessionLocation: StorageLocation?, stapleIds: Set<Int64> = []) {
+    /// The location picker's value: Fridge / Freezer / Pantry / Staples.
+    var placement: Placement {
+        get { isStaple ? .staples : Placement(location) }
+        set {
+            if let loc = newValue.location {
+                if isStaple { setStaple(false) }
+                location = loc
+            } else if !isStaple {
+                setStaple(true)
+            }
+        }
+    }
+
+    /// Picking an ingredient fills in unit, amount and where it goes. A place the user picked
+    /// earlier in this sheet (`sessionPlacement`) wins; otherwise spices and the catalog's
+    /// common staples (`stapleIds`) go to Staples, everything else to its category's location.
+    mutating func pick(_ choice: IngredientChoice, sessionPlacement: Placement?, stapleIds: Set<Int64> = []) {
         ingredient = choice
         unit = MeasureUnit(catalogUnit: choice.defaultUnit)
-        location = sessionLocation ?? PantryDefaults.location(forCategory: choice.category)
-        setStaple(PantryDefaults.isStaple(choice, stapleIds: stapleIds))
+        location = PantryDefaults.location(forCategory: choice.category)
+        setStaple(false)
+        if let sessionPlacement {
+            placement = sessionPlacement
+        } else if PantryDefaults.isStaple(choice, stapleIds: stapleIds) {
+            setStaple(true)
+        }
     }
 
     /// On: "some" and no expiry (both still editable). Off: 1 and the expiry rule (F1.6).

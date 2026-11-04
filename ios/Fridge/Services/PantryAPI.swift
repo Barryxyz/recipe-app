@@ -93,8 +93,7 @@ enum PantryAPI {
         let have = Set(existing.compactMap(\.ingredient_id))
         let rows: [ItemWrite] = choices.filter { !have.contains($0.id) }.map { c in
             var d = ItemDraft()
-            d.pick(c, sessionLocation: nil)
-            d.setStaple(true)
+            d.pick(c, sessionPlacement: .staples)
             return ItemWrite(ingredientId: c.id, displayName: c.name, quantity: nil, unit: d.unit.rawValue,
                              location: d.location, expiryOverridden: true, expiresAt: .some(nil),
                              source: .manual, isStaple: true)

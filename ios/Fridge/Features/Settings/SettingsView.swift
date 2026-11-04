@@ -45,10 +45,6 @@ struct FoodPrefsView: View {
             if loaded {
                 Section("Diet") { DietPicker(draft: $draft) }
                 Section("Allergies") { AllergyPicker(draft: $draft) }
-                Section {
-                    Text("Staples and seasonings are in your pantry, in Seasoning & Staples at the bottom.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
                 Section("Recipes") { ServingsStepper(draft: $draft) }
             } else {
                 ProgressView()

@@ -24,7 +24,7 @@ struct ItemFormView: View {
     @State private var shelfLife: CatalogShelfLife?
     @State private var userDefaults: [ExpiryCalculator.DefaultKey: Int] = [:]
 
-    @State private var sessionLocation: StorageLocation?
+    @State private var sessionPlacement: Placement?
     @State private var stapleIds: Set<Int64> = []
     @State private var addedCount = 0
     @State private var lastAdded: String?
@@ -152,14 +152,6 @@ struct ItemFormView: View {
                     .font(.subheadline)
             }
 
-            Toggle(isOn: Binding(get: { draft.isStaple }, set: { draft.setStaple($0) })) {
-                VStack(alignment: .leading) {
-                    Text("Seasoning or staple")
-                    Text("Listed in Seasoning & Staples. Amount and date are optional.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-
             Toggle("Some (no exact amount)", isOn: Binding(get: { draft.isSome }, set: { draft.setSome($0) }))
 
             if !draft.isSome {
@@ -182,13 +174,13 @@ struct ItemFormView: View {
                 .font(.title3)
             }
 
-            // Only a location the user picks carries over to the next item. The category
-            // default filled in by pick() must not, or it would stick for the whole session.
+            // Only a place the user picks carries over to the next item. The default filled in
+            // by pick() must not, or it would stick for the whole session.
             Picker("Location", selection: Binding(
-                get: { draft.location },
-                set: { draft.location = $0; if isAdd { sessionLocation = $0 } }
+                get: { draft.placement },
+                set: { draft.placement = $0; if isAdd { sessionPlacement = $0 } }
             )) {
-                ForEach(StorageLocation.allCases) { Text($0.title).tag($0) }
+                ForEach(Placement.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
 
@@ -312,7 +304,7 @@ struct ItemFormView: View {
             if !draft.expiryOverridden { draft.chosenExpiry = nil }
             changingIngredient = false
         } else {
-            draft.pick(choice, sessionLocation: sessionLocation, stapleIds: stapleIds)
+            draft.pick(choice, sessionPlacement: sessionPlacement, stapleIds: stapleIds)
         }
         query = ""
         results = []
