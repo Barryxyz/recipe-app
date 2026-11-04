@@ -12,7 +12,7 @@ const MAX_EDGE = 1568;
 
 const Body = z.object({
   location: z.enum(["fridge", "freezer", "pantry", "staples"]),
-  images: z.array(z.string().min(1)).min(1).max(4),
+  images: z.array(z.string().min(1)).min(1).max(2),   // cost: 2 photos ≈ 2 shelves each (raise later if needed)
 });
 
 // Kept to types structured outputs supports well; ranges are checked in buildDraft.
@@ -48,7 +48,7 @@ Rules:
 export default {
   fetch: aiEndpoint("scan-ingredients", async ({ body, userId, supabase, supabaseAdmin }) => {
     const parsed = Body.safeParse(body);
-    if (!parsed.success) throw new HttpError("bad_request", "Send a location and 1-4 photos.");
+    if (!parsed.success) throw new HttpError("bad_request", "Send a location and 1-2 photos.");
     const { location, images } = parsed.data;
 
     // Photos must already be shrunk and stripped by the app (F1.1).

@@ -15,7 +15,7 @@ const MODEL_DEFAULTS: Record<AiKind, [envVar: string, model: string]> = {
 
 // How hard the model thinks before answering (billed as output tokens).
 const EFFORT_DEFAULTS: Record<AiKind, [envVar: string, effort: Effort]> = {
-  scan: ["SCAN_EFFORT", "high"],          // accuracy is what users notice first
+  scan: ["SCAN_EFFORT", "medium"],        // listing visible food is recognition, not deep reasoning; raise if the eval says so
   recipes: ["RECIPE_EFFORT", "medium"],
   fallback: ["FALLBACK_EFFORT", "high"],
   estimate: ["ESTIMATE_EFFORT", "low"],

@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to eval/labels.json. One entry per scan: the photo files (in eval/photos/, max 4, same shelf area), the location, and what's really there. Use catalog names where you can (e.g. 'egg', 'milk', 'green onion'). quantity/unit are optional; give them when you know them, for the quantity-error metric. tidy: true for neat shelves (the 80% / 90% target applies to those).",
+  "_comment": "Copy to eval/labels.json. One entry per scan: the photo files (in eval/photos/, max 2, same shelf area), the location, and what's really there. Use catalog names where you can (e.g. 'egg', 'milk', 'green onion'). quantity/unit are optional; give them when you know them, for the quantity-error metric. tidy: true for neat shelves (the 80% / 90% target applies to those).",
   "scans": [
     {
       "id": "fridge-top-shelf",

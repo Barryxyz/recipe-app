@@ -1,7 +1,7 @@
 import PhotosUI
 import SwiftUI
 
-/// F1.1: pick a place, take or import 1–4 photos, send them to `scan-ingredients`.
+/// F1.1: pick a place, take or import 1–2 photos, send them to `scan-ingredients`.
 /// Photos stay in memory and are released when this screen closes.
 struct ScanView: View {
     /// Close the scan and open the manual add sheet instead.
@@ -25,7 +25,8 @@ struct ScanView: View {
     @State private var processing = false
     @State private var sendTask: Task<Void, Never>?
 
-    static let maxPhotos = 4
+    /// Kept low for cost (one phone photo usually covers about 2 shelves). Server enforces it too.
+    static let maxPhotos = 2
     private static let placementKey = "scan.lastPlacement"
     private static var lastPlacement: Placement {
         UserDefaults.standard.string(forKey: placementKey).flatMap(Placement.init(rawValue:)) ?? .fridge
@@ -125,7 +126,7 @@ struct ScanView: View {
                     .accessibilityLabel("Remove photo")
                 }
                 if photos.isEmpty {
-                    Text("Take up to 4 photos, one per shelf.").font(.footnote).foregroundStyle(.secondary)
+                    Text("Up to 2 photos, about 2 shelves each.").font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .padding(.horizontal)
@@ -151,7 +152,7 @@ struct ScanView: View {
                 }
                 .disabled(full || camera.access != .granted || camera.isCapturing)
                 .accessibilityLabel("Take photo")
-                if full { Text("Max 4 photos").font(.caption2).foregroundStyle(.secondary) }
+                if full { Text("Max \(Self.maxPhotos) photos").font(.caption2).foregroundStyle(.secondary) }
             }
 
             Button { send() } label: {
