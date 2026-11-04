@@ -50,6 +50,7 @@ struct ItemFormView: View {
                 if let editingItem { editActions(editingItem) }
                 if isAdd, let lastAdded { addedSection(lastAdded) }
             }
+            .safeAreaInset(edge: .bottom) { if isAdd { addBar } }
             .navigationTitle(isAdd ? "Add items" : "Edit item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
@@ -234,23 +235,35 @@ struct ItemFormView: View {
         }
     }
 
+    /// Pinned to the bottom of the sheet so it stays visible above the keyboard and while
+    /// scrolling a long result list (a bottom toolbar hides in both cases).
+    private var addBar: some View {
+        HStack(spacing: 12) {
+            Button { Task { await addAndNext() } } label: {
+                Label("Add & next", systemImage: "plus").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!draft.canAdd || changingIngredient || saving)
+
+            Button { Task { await done() } } label: {
+                Text("Done").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(saving)
+        }
+        .controlSize(.large)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.bar)
+    }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button(isAdd && addedCount > 0 ? "Close" : "Cancel") { dismiss() }
         }
-        if isAdd {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { Task { await done() } }
-            }
-            ToolbarItem(placement: .bottomBar) {
-                Button { Task { await addAndNext() } } label: {
-                    Label("Add & next", systemImage: "plus").labelStyle(.titleAndIcon)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!draft.canAdd || changingIngredient)
-            }
-        } else {
+        // In add mode, Add & next and Done live in addBar (always visible, above the keyboard).
+        if !isAdd {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { Task { await saveEdit(force: false) } }
                     .disabled(!draft.canSaveEdit || changingIngredient)

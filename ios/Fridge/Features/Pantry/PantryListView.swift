@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Temporary pantry list for F1.5 (name, quantity, location, expiry). F1.4 replaces it with
-/// tabs, badges, swipe actions and search.
+/// Temporary pantry list for F1.5, grouped by location (name, quantity, expiry). F1.4 replaces
+/// it with tabs, badges, swipe actions and search.
 struct PantryListView: View {
     let user: AppUser
 
@@ -32,9 +32,18 @@ struct PantryListView: View {
                         Button("Add manually") { showAdd = true }.buttonStyle(.borderedProminent)
                     }
                 } else {
-                    List(items) { item in
-                        Button { editing = item } label: { row(item) }
-                            .foregroundStyle(.primary)
+                    List {
+                        ForEach(StorageLocation.allCases) { location in
+                            let here = items.filter { $0.location == location }
+                            if !here.isEmpty {
+                                Section("\(location.title) (\(here.count))") {
+                                    ForEach(here) { item in
+                                        Button { editing = item } label: { row(item) }
+                                            .foregroundStyle(.primary)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -64,7 +73,7 @@ struct PantryListView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.displayName)
-                Text("\(QuantityFormat.string(item.quantity, unit: item.unit)) · \(item.location.title)")
+                Text(QuantityFormat.string(item.quantity, unit: item.unit))
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
