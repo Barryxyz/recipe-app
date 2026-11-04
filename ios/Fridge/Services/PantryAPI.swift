@@ -201,6 +201,27 @@ enum PantryAPI {
                                           pantry: $0.shelf_life_pantry_days) }
     }
 
+    /// Catalog shelf lives for several ingredients (scan review previews).
+    static func shelfLives(for ids: [Int64]) async throws -> [Int64: CatalogShelfLife] {
+        let catalogIds = Array(Set(ids.filter { $0 > 0 && $0 < PantryItem.customIdStart })).map { Int($0) }
+        guard !catalogIds.isEmpty else { return [:] }
+        struct Row: Decodable {
+            let id: Int64
+            let shelf_life_fridge_days: Int?
+            let shelf_life_freezer_days: Int?
+            let shelf_life_pantry_days: Int?
+        }
+        let rows: [Row] = try await catalogDB.from("ingredients")
+            .select("id, shelf_life_fridge_days, shelf_life_freezer_days, shelf_life_pantry_days")
+            .in("id", values: catalogIds)
+            .execute()
+            .value
+        return Dictionary(uniqueKeysWithValues: rows.map {
+            ($0.id, CatalogShelfLife(fridge: $0.shelf_life_fridge_days, freezer: $0.shelf_life_freezer_days,
+                                     pantry: $0.shelf_life_pantry_days))
+        })
+    }
+
     static func userDefaults() async throws -> [ExpiryCalculator.DefaultKey: Int] {
         struct Row: Decodable { let ingredient_id: Int64; let location: StorageLocation; let days: Int }
         let rows: [Row] = try await app.from("user_shelf_life_overrides")

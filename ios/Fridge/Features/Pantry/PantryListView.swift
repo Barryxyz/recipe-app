@@ -25,6 +25,9 @@ struct PantryListView: View {
     @State private var showSettings = false
     @State private var showHistory = false
     @State private var showScan = false
+    @State private var notice: String?
+    @State private var pendingReview: ScanReview?
+    @State private var resumingReview: ScanReview?
     @State private var undo: UndoAction?
     @State private var actionError: String?
 
@@ -51,7 +54,28 @@ struct PantryListView: View {
                 .sheet(isPresented: $showSettings) { SettingsView(user: user) }
                 .sheet(isPresented: $showHistory) { HistoryView { Task { await load() } } }
                 .fullScreenCover(isPresented: $showScan) {
-                    ScanView(onAddManually: { Task { try? await Task.sleep(for: .milliseconds(400)); showAdd = true } })
+                    ScanView(onAddManually: { Task { try? await Task.sleep(for: .milliseconds(400)); showAdd = true } },
+                             onSaved: { n in savedFromScan(n) })
+                }
+                .fullScreenCover(item: $resumingReview) { draft in
+                    NavigationStack {
+                        ScanReviewView(review: draft,
+                                       onSaved: { n in resumingReview = nil; savedFromScan(n) },
+                                       onDiscard: { resumingReview = nil },
+                                       onRetake: nil,
+                                       onAddManually: { resumingReview = nil; showAdd = true })
+                    }
+                }
+                .alert("Finish reviewing your last scan?", isPresented: Binding(
+                    get: { pendingReview != nil }, set: { if !$0 { pendingReview = nil } })) {
+                    Button("Review") { resumingReview = pendingReview; pendingReview = nil }
+                    Button("Discard", role: .destructive) { ScanReview.clearDraft(); pendingReview = nil }
+                } message: {
+                    Text("\(pendingReview?.rows.count ?? 0) items are waiting. Nothing has been added to your pantry yet.")
+                }
+                .task {
+                    // A review left unfinished (e.g. the app was closed) can be resumed (F1.3).
+                    if !showScan, let draft = ScanReview.loadDraft() { pendingReview = draft }
                 }
                 .overlay(alignment: .bottom) { undoToast }
                 .confirmationDialog(
@@ -300,7 +324,17 @@ struct PantryListView: View {
 
     @ViewBuilder
     private var undoToast: some View {
-        if let undo {
+        if let notice {
+            Label(notice, systemImage: "checkmark.circle.fill")
+                .padding()
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task(id: notice) {
+                    try? await Task.sleep(for: .seconds(3))
+                    withAnimation { self.notice = nil }
+                }
+        } else if let undo {
             HStack {
                 Text(undo.message).lineLimit(1)
                 Spacer()
@@ -319,6 +353,11 @@ struct PantryListView: View {
     }
 
     // MARK: Actions
+
+    private func savedFromScan(_ count: Int) {
+        Task { await load() }
+        withAnimation { notice = "\(count) item\(count == 1 ? "" : "s") added" }
+    }
 
     private func load() async {
         do {

@@ -6,6 +6,8 @@ import SwiftUI
 struct ScanView: View {
     /// Close the scan and open the manual add sheet instead.
     var onAddManually: () -> Void = {}
+    /// Review saved: items added or updated (F1.3).
+    var onSaved: (Int) -> Void = { _ in }
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -14,7 +16,7 @@ struct ScanView: View {
     private enum Phase: Equatable {
         case capturing
         case sending
-        case result(ScanAPI.Response)
+        case review(ScanReview)
         case failed(ScanAPI.ScanError)
     }
 
@@ -24,6 +26,8 @@ struct ScanView: View {
     @State private var libraryItems: [PhotosPickerItem] = []
     @State private var processing = false
     @State private var sendTask: Task<Void, Never>?
+    @State private var usage: ScanAPI.Usage?
+    @State private var stapleIds: Set<Int64> = []
 
     /// Kept low for cost (one phone photo usually covers about 2 shelves). Server enforces it too.
     static let maxPhotos = 2
@@ -38,22 +42,35 @@ struct ScanView: View {
                 switch phase {
                 case .capturing: captureScreen
                 case .sending: sendingScreen
-                case .result(let r): ScanReceivedView(response: r) { finish() }
+                case .review(let r):
+                    ScanReviewView(review: r,
+                                   onSaved: { n in finish(); onSaved(n) },
+                                   onDiscard: { finish() },
+                                   onRetake: { phase = .capturing },
+                                   onAddManually: { addManually() })
                 case .failed(let e): failedScreen(e)
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Close") { finish() } }
+                if !isReviewing {
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { finish() } }
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
         }
         .task { await camera.requestAccessAndStart() }
+        .task {
+            usage = try? await ScanAPI.usage()
+            stapleIds = (try? await PantryAPI.catalogStapleIds()) ?? []
+        }
         .onDisappear {
             sendTask?.cancel()
             camera.stop()
             photos = []   // release image data
         }
     }
+
+    private var isReviewing: Bool { if case .review = phase { true } else { false } }
 
     // MARK: Capture
 
@@ -126,7 +143,12 @@ struct ScanView: View {
                     .accessibilityLabel("Remove photo")
                 }
                 if photos.isEmpty {
-                    Text("Up to 2 photos, about 2 shelves each.").font(.footnote).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Up to 2 photos, about 2 shelves each.").font(.footnote).foregroundStyle(.secondary)
+                        if let usage {
+                            Text(usage.text).font(.caption).foregroundStyle(usage.left <= 2 ? .orange : .secondary)
+                        }
+                    }
                 }
             }
             .padding(.horizontal)
@@ -159,7 +181,7 @@ struct ScanView: View {
                 Text("Scan (\(photos.count))").fontWeight(.semibold)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(photos.isEmpty || processing)
+            .disabled(photos.isEmpty || processing || (usage?.left ?? 1) <= 0)
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding()
@@ -190,10 +212,13 @@ struct ScanView: View {
             switch error {
             case .offline: Text("You can add items by hand instead.")
             case .aiDisabled: Text("AI features are temporarily unavailable. You can add items by hand.")
+            case .limitReached(let message): Text(message)
             case .failed: Text("Your photos are still here. Try again, or add items by hand.")
             }
         } actions: {
-            if error != .aiDisabled {
+            if case .failed = error {
+                Button("Retry") { send() }.buttonStyle(.borderedProminent)
+            } else if error == .offline {
                 Button("Retry") { send() }.buttonStyle(.borderedProminent)
             }
             Button("Add manually") { addManually() }
@@ -235,7 +260,9 @@ struct ScanView: View {
             do {
                 let response = try await ScanAPI.scan(placement: where_, photos: toSend)
                 guard !Task.isCancelled else { return }   // cancelled: no further UI changes
-                phase = .result(response)
+                usage = response.usage ?? usage
+                photos = []                                // photos are no longer needed: release them
+                phase = .review(ScanReview(scan: response, placement: where_, stapleIds: stapleIds))
             } catch is CancellationError {
                 return
             } catch let error as ScanAPI.ScanError {
@@ -257,64 +284,5 @@ struct ScanView: View {
         sendTask?.cancel()
         photos = []
         dismiss()
-    }
-}
-
-/// Temporary results until the review screen (F1.3): what the scan found. Nothing is saved.
-private struct ScanReceivedView: View {
-    let response: ScanAPI.Response
-    let done: () -> Void
-
-    var body: some View {
-        List {
-            Section {
-                if response.items.isEmpty {
-                    Label("No food found in these photos", systemImage: "questionmark.circle")
-                } else {
-                    Label("Found \(response.items.count) item\(response.items.count == 1 ? "" : "s")",
-                          systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
-                Text("Review and saving arrive in the next step (F1.3). Nothing was added to your pantry.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
-            if !response.items.isEmpty {
-                Section("Detected") {
-                    ForEach(response.items) { item in
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 6) {
-                                    Text(item.display_name)
-                                    if item.low_confidence {
-                                        Image(systemName: "exclamationmark.triangle.fill")
-                                            .foregroundStyle(.orange).font(.caption)
-                                            .accessibilityLabel("Unsure")
-                                    }
-                                }
-                                Text(detail(item)).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Text(QuantityFormat.string(item.quantity, unit: item.unit))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-            Section { Button("Done", action: done) }
-        }
-        .navigationTitle("Scan results")
-    }
-
-    private func detail(_ item: ScanAPI.DraftItem) -> String {
-        var parts: [String] = []
-        switch item.match {
-        case "exact", "alias": parts.append(item.display_name == item.name ? "matched" : "seen as \u{201C}\(item.name)\u{201D}")
-        case "fuzzy": parts.append("closest match for \u{201C}\(item.name)\u{201D}")
-        default: parts.append("not in catalog")
-        }
-        parts.append("\(Int((item.confidence * 100).rounded()))% sure")
-        if item.suggest_staple { parts.append("staple") }
-        if item.photo_indexes.count > 1 { parts.append("in \(item.photo_indexes.count) photos") }
-        return parts.joined(separator: " · ")
     }
 }

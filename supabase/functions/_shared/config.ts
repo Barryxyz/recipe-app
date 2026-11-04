@@ -50,6 +50,15 @@ export function purchaseRequired(): boolean {
   return env("REQUIRE_PURCHASE")?.toLowerCase() !== "false";
 }
 
+/** NFR-9: successful scans allowed per user per local day / month. */
+export function scanLimits(): { daily: number; monthly: number } {
+  const n = (name: string, fallback: number) => {
+    const v = Number(env(name));
+    return Number.isInteger(v) && v > 0 ? v : fallback;
+  };
+  return { daily: n("SCAN_DAILY_LIMIT", 10), monthly: n("SCAN_MONTHLY_LIMIT", 60) };
+}
+
 export function anthropicApiKey(): string {
   const key = env("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY is not set");

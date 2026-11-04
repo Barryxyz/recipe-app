@@ -6,11 +6,17 @@ struct ItemFormView: View {
     enum Mode: Equatable {
         case add
         case edit(PantryItem)
+        /// Scan review (F1.3): edit a row; changes go back to the list, not the database.
+        case reviewEdit(ItemDraft)
+        /// Scan review: add rows the scan missed; each Add goes back to the list.
+        case reviewAdd
     }
 
     let mode: Mode
     /// Called after anything is saved, so the list can refresh.
     var onChange: () -> Void = {}
+    /// Review modes: receives each finished draft instead of it being saved.
+    var onDraft: (ItemDraft) -> Void = { _ in }
 
     @Environment(\.dismiss) private var dismiss
 
@@ -38,7 +44,8 @@ struct ItemFormView: View {
 
     @FocusState private var searchFocused: Bool
 
-    private var isAdd: Bool { mode == .add }
+    private var isAdd: Bool { mode == .add || mode == .reviewAdd }
+    private var isReviewEdit: Bool { if case .reviewEdit = mode { true } else { false } }
     private var editingItem: PantryItem? { if case .edit(let item) = mode { item } else { nil } }
     private var addedAt: Date { editingItem?.addedAt ?? .now }
     private var showSearch: Bool { draft.ingredient == nil || changingIngredient }
@@ -51,7 +58,7 @@ struct ItemFormView: View {
                 if let editingItem { editActions(editingItem) }
                 if isAdd, let lastAdded { addedSection(lastAdded) }
             }
-            .navigationTitle(isAdd ? "Add items" : "Edit item")
+            .navigationTitle(mode == .reviewAdd ? "Add to scan" : isAdd ? "Add items" : "Edit item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
             .disabled(saving)
@@ -252,6 +259,12 @@ struct ItemFormView: View {
                     .fontWeight(.semibold)
                     .disabled(!draft.canAdd || changingIngredient || saving)
             }
+        } else if isReviewEdit {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { onDraft(draft); dismiss() }
+                    .fontWeight(.semibold)
+                    .disabled(!draft.canSaveEdit || changingIngredient)
+            }
         } else {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { Task { await saveEdit(force: false) } }
@@ -264,7 +277,10 @@ struct ItemFormView: View {
 
     private func loadInitial() async {
         async let defaults = try? PantryAPI.userDefaults()
-        if let item = editingItem {
+        if case .reviewEdit(let given) = mode {
+            draft = given
+            stapleIds = (try? await PantryAPI.catalogStapleIds()) ?? []
+        } else if let item = editingItem {
             let choice = (try? await PantryAPI.choice(for: item))
                 ?? IngredientChoice(id: item.ingredientId ?? 0, name: item.displayName, category: nil,
                                     defaultUnit: item.unit, isCustom: true)
@@ -352,6 +368,12 @@ struct ItemFormView: View {
     @discardableResult
     private func saveNew() async -> Bool {
         guard draft.canAdd else { return false }
+        if mode == .reviewAdd {
+            onDraft(draft)
+            addedCount += 1
+            lastAdded = draft.ingredient?.name
+            return true
+        }
         saving = true
         defer { saving = false }
         do {
@@ -370,7 +392,7 @@ struct ItemFormView: View {
         guard await saveNew() else { return }
         draft = ItemDraft()
         query = ""
-        recent = (try? await PantryAPI.recentIngredients()) ?? recent
+        if mode == .add { recent = (try? await PantryAPI.recentIngredients()) ?? recent }
         searchFocused = true
     }
 

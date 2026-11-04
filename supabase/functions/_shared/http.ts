@@ -17,7 +17,8 @@ export type ErrorCode =
   | "ai_disabled"
   | "ai_failed"
   | "validation_failed"
-  | "timeout";
+  | "timeout"
+  | "limit_reached";
 
 const STATUS: Record<ErrorCode, number> = {
   unauthorized: 401,
@@ -28,6 +29,7 @@ const STATUS: Record<ErrorCode, number> = {
   ai_failed: 502,
   validation_failed: 502,
   timeout: 504,
+  limit_reached: 429,
 };
 
 const CORS = {

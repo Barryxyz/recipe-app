@@ -87,7 +87,7 @@ export async function callModel<S extends z.ZodType>(p: CallModelParams<S>): Pro
     }
   }
 
-  await logUsage(p, servedBy, usage);
+  await logUsage(p, servedBy, usage, result.ok);
   log({
     ai: p.kind, model: servedBy, ok: result.ok, reason: result.ok ? undefined : result.reason,
     in: usage.input_tokens, out: usage.output_tokens,
@@ -111,13 +111,14 @@ export async function callModel<S extends z.ZodType>(p: CallModelParams<S>): Pro
   }
 }
 
-async function logUsage(p: CallModelParams<z.ZodType>, model: string, usage: Usage): Promise<void> {
+async function logUsage(p: CallModelParams<z.ZodType>, model: string, usage: Usage, ok: boolean): Promise<void> {
   const { error } = await p.supabaseAdmin.schema("app").from("ai_usage_log").insert({
     user_id: p.userId,
     kind: p.kind,
     model,
     input_tokens: usage.input_tokens,
     output_tokens: usage.output_tokens,
+    ok,
   });
   if (error) log({ ai_usage_log: "insert_failed", code: error.code });
 }

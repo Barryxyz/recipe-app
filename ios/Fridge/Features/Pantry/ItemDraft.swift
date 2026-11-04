@@ -20,7 +20,7 @@ enum PantryDefaults {
 
 /// Where an item is listed: a storage location, or Seasonings & Staples (its own place in the
 /// pantry, user request 2026-11-04). Staples are stored as `is_staple` plus a hidden location.
-enum Placement: String, CaseIterable, Identifiable {
+enum Placement: String, CaseIterable, Identifiable, Codable {
     case fridge, freezer, pantry, staples
 
     var id: String { rawValue }
@@ -53,7 +53,8 @@ enum Placement: String, CaseIterable, Identifiable {
 }
 
 /// The add/edit form's state, kept free of UI and networking so it can be unit tested.
-struct ItemDraft: Equatable {
+/// Codable so a scan review can be kept as a draft (F1.3).
+struct ItemDraft: Equatable, Codable {
     var ingredient: IngredientChoice?
     /// nil = "some".
     var quantity: Double? = 1

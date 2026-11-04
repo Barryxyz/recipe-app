@@ -3,12 +3,15 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { z } from "npm:zod@4.6.7";
 import { callModel, withFallback } from "../_shared/ai.ts";
-import { effortFor, modelFor } from "../_shared/config.ts";
+import { effortFor, modelFor, scanLimits } from "../_shared/config.ts";
 import { aiEndpoint, HttpError } from "../_shared/http.ts";
 import { decodeBase64, inspectJpeg } from "../_shared/jpeg.ts";
 import { buildDraft, type CatalogInfo, type SearchHit } from "../_shared/scan.ts";
 
 const MAX_EDGE = 1568;
+
+// { check: true } returns scans left without scanning (camera screen, NFR-9).
+const Check = z.object({ check: z.literal(true) });
 
 const Body = z.object({
   location: z.enum(["fridge", "freezer", "pantry", "staples"]),
@@ -28,7 +31,7 @@ const ModelOutput = z.object({
 
 const PLACE: Record<string, string> = {
   fridge: "the inside of a fridge",
-  freezer: "the inside of a freezer",
+  freezer: "the inside of a freezer. Frost, condensation and plain or unlabelled bags are common: when you can't tell exactly what something is, use a broader name (\"frozen vegetables\", \"frozen meat\") with low confidence rather than a confident guess",
   pantry: "pantry or cupboard shelves",
   staples: "a shelf of seasonings, spices, oils, sauces and baking staples (often small labelled jars and bottles)",
 };
@@ -47,6 +50,28 @@ Rules:
 
 export default {
   fetch: aiEndpoint("scan-ingredients", async ({ body, userId, supabase, supabaseAdmin }) => {
+    const limits = scanLimits();
+    const readUsage = async () => {
+      const { data, error } = await supabaseAdmin.schema("app").rpc("scan_usage", { p_user: userId });
+      if (error || !data) throw new Error("usage lookup failed");
+      const u = data as { today: number; this_month: number; day_resets_at: string; month_resets_at: string };
+      return {
+        today: u.today, daily_limit: limits.daily, this_month: u.this_month, monthly_limit: limits.monthly,
+        left: Math.max(0, Math.min(limits.daily - u.today, limits.monthly - u.this_month)),
+        resets_at: limits.monthly - u.this_month <= 0 ? u.month_resets_at : u.day_resets_at,
+      };
+    };
+
+    if (Check.safeParse(body).success) return { usage: await readUsage() };
+
+    const before = await readUsage();
+    if (before.left <= 0) {
+      const monthly = before.this_month >= limits.monthly;
+      throw new HttpError("limit_reached", monthly
+        ? `You've used this month's ${limits.monthly} scans. You can still add items manually.`
+        : `You've used today's ${limits.daily} scans. They reset at midnight. You can still add items manually.`);
+    }
+
     const parsed = Body.safeParse(body);
     if (!parsed.success) throw new HttpError("bad_request", "Send a location and 1-2 photos.");
     const { location, images } = parsed.data;
@@ -99,6 +124,6 @@ export default {
       },
     });
 
-    return { location, items };
+    return { location, items, usage: await readUsage() };
   }),
 };
