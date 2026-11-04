@@ -86,7 +86,7 @@ struct PrefsDraft: Equatable {
     var allergies: Set<AllergyChoice> = []
     /// Free text, comma-separated: "mustard, celery".
     var otherAllergies = ""
-    /// Onboarding's staples screen: becomes Seasoning & Staples pantry items on Finish.
+    /// Onboarding's staples screen: becomes Seasonings & Staples pantry items on Finish.
     var staples: [IngredientChoice] = []
     var servings = 2
 

@@ -17,7 +17,7 @@ struct PantryItem: Codable, Identifiable, Equatable {
     var expiryOverridden: Bool
     var status: Status
     var source: Source
-    /// Seasoning & Staples: shown in its own section; amount and expiry optional.
+    /// Seasonings & Staples: shown in its own section; amount and expiry optional.
     var isStaple: Bool = false
 
     enum CodingKeys: String, CodingKey {

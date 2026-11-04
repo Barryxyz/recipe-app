@@ -165,12 +165,12 @@ struct PantryListView: View {
         }
     }
 
-    /// Seasoning & Staples: its own place, last on All since it's checked least. A–Z, no badges
+    /// Seasonings & Staples: its own place, last on All since it's checked least. A–Z, no badges
     /// unless dated.
     @ViewBuilder
     private func staplesSection(_ staples: [PantryItem]) -> some View {
         if !staples.isEmpty {
-            Section("Seasoning & Staples (\(staples.count))") {
+            Section("Seasonings & Staples (\(staples.count))") {
                 rows(PantryGrouping.groups(staples, sort: .name), showLocation: false)
             }
         }

@@ -25,7 +25,7 @@ struct OnboardingView: View {
                         header("Any allergies?", "Recipes will leave these out.")
                         AllergyPicker(draft: $draft)
                     default:
-                        header("Do you usually have these?", "They go in Seasoning & Staples at the bottom of your pantry. No amounts or dates needed.")
+                        header("Do you usually have these?", "They go in Seasonings & Staples at the bottom of your pantry. No amounts or dates needed.")
                         StaplesEditor(draft: $draft)
                         Divider()
                         ServingsStepper(draft: $draft)

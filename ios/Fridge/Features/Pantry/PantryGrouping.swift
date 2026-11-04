@@ -122,7 +122,7 @@ enum PantryGrouping {
     }
 
     /// Splits a list into the pantry's sections: Expired (anything past its date, staples
-    /// included), Seasoning & Staples (the rest of the staples), and everything else.
+    /// included), Seasonings & Staples (the rest of the staples), and everything else.
     static func sections(_ items: [PantryItem], now: Date = .now, calendar: Calendar = .current)
         -> (expired: [PantryItem], staples: [PantryItem], regular: [PantryItem]) {
         var expired: [PantryItem] = [], staples: [PantryItem] = [], regular: [PantryItem] = []

@@ -12,13 +12,13 @@ enum PantryDefaults {
         }
     }
 
-    /// Seasoning & Staples by default: spices and the catalog's common staples.
+    /// Seasonings & Staples by default: spices and the catalog's common staples.
     static func isStaple(_ choice: IngredientChoice, stapleIds: Set<Int64>) -> Bool {
         choice.category == "spices" || stapleIds.contains(choice.id)
     }
 }
 
-/// Where an item is listed: a storage location, or Seasoning & Staples (its own place in the
+/// Where an item is listed: a storage location, or Seasonings & Staples (its own place in the
 /// pantry, user request 2026-11-04). Staples are stored as `is_staple` plus a hidden location.
 enum Placement: String, CaseIterable, Identifiable {
     case fridge, freezer, pantry, staples
@@ -63,7 +63,7 @@ struct ItemDraft: Equatable {
     var chosenExpiry: Date?
     /// True when the user set the date (or chose "no expiry") for this item only.
     var expiryOverridden = false
-    /// Seasoning & Staples item: defaults to "some" and no expiry.
+    /// Seasonings & Staples item: defaults to "some" and no expiry.
     var isStaple = false
 
     var isSome: Bool { quantity == nil }
