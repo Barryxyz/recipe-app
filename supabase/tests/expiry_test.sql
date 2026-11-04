@@ -1,6 +1,6 @@
 -- F1.6 acceptance test: expiry rules (app.default_expiry and the pantry_items trigger).
 -- The case table lives in expiry_cases.json and is shared with the Swift tests; test.sh
--- substitutes it for __EXPIRY_CASES_JSON__ below. Runs in a rolled-back transaction.
+-- fills it into the fx variable below. Runs in a rolled-back transaction.
 --
 --   ./scripts/test.sh db
 -- Prints one row: PASS, or FAIL followed by the failed checks.
