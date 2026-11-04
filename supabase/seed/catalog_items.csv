@@ -38,7 +38,7 @@ id,name,aliases,category,default_unit,grams_per_unit,density_g_per_ml,shelf_life
 37,frozen peas,peas;green peas,frozen,g,,,3,240,1,false,,"Peas, green, frozen, unprepared (Includes foods for USDA's Food Distribution Program)"
 38,egg,eggs,dairy,each,50,,28,365,1,false,egg,"Egg, whole, raw, fresh"
 39,milk,whole milk,dairy,ml,,1.03,7,90,1,false,milk,"Milk, whole, 3.25% milkfat, with added vitamin D"
-40,butter,salted butter;unsalted butter,dairy,g,,,60,270,2,false,milk,"Butter, salted"
+40,butter,salted butter;unsalted butter,dairy,g,,,60,270,2,true,milk,"Butter, salted"
 41,cheddar cheese,cheddar,dairy,g,,,28,180,1,false,milk,"Cheese, cheddar (Includes foods for USDA's Food Distribution Program)"
 42,mozzarella,mozzarella cheese;shredded mozzarella,dairy,g,,,14,180,1,false,milk,"Cheese, mozzarella, whole milk"
 43,parmesan,parmesan cheese;parmigiano reggiano;parmigiano,dairy,g,,,60,180,1,false,milk,"Cheese, parmesan, hard"
@@ -73,8 +73,8 @@ id,name,aliases,category,default_unit,grams_per_unit,density_g_per_ml,shelf_life
 72,sugar,white sugar;granulated sugar;caster sugar,baking,g,,0.84,730,,730,true,,"Sugars, granulated"
 73,brown sugar,,baking,g,,0.92,730,,730,false,,"Sugars, brown"
 74,honey,,baking,g,,1.42,730,,730,false,,Honey
-75,baking powder,,baking,g,,0.92,365,,365,false,,"Leavening agents, baking powder, double-acting, sodium aluminum sulfate"
-76,baking soda,bicarbonate of soda;bicarb,baking,g,,0.92,730,,730,false,,"Leavening agents, baking soda"
+75,baking powder,,baking,g,,0.92,365,,365,true,,"Leavening agents, baking powder, double-acting, sodium aluminum sulfate"
+76,baking soda,bicarbonate of soda;bicarb,baking,g,,0.92,730,,730,true,,"Leavening agents, baking soda"
 77,salt,table salt;sea salt;kosher salt,spices,g,,1.2,1825,,1825,true,,"Salt, table"
 78,black pepper,pepper;ground black pepper,spices,g,,0.46,1095,,1095,true,,"Spices, pepper, black"
 79,cinnamon,ground cinnamon,spices,g,,0.52,1095,,1095,false,,"Spices, cinnamon, ground"
@@ -82,12 +82,12 @@ id,name,aliases,category,default_unit,grams_per_unit,density_g_per_ml,shelf_life
 81,paprika,smoked paprika,spices,g,,0.46,1095,,1095,false,,"Spices, paprika"
 82,cayenne pepper,cayenne;red pepper flakes;chili flakes;crushed red pepper,spices,g,,0.36,1095,,1095,false,,"Spices, pepper, red or cayenne"
 83,dried oregano,oregano,spices,g,,0.2,1095,,1095,false,,"Spices, oregano, dried"
-84,garlic powder,,spices,g,,0.62,1095,,1095,false,,"Spices, garlic powder"
+84,garlic powder,,spices,g,,0.62,1095,,1095,true,,"Spices, garlic powder"
 85,olive oil,extra virgin olive oil;evoo,oils,ml,,0.91,365,,120,true,,"Oil, olive, salad or cooking"
 86,vegetable oil,cooking oil;canola oil;rapeseed oil,oils,ml,,0.92,365,,180,true,,"Oil, canola"
 87,sesame oil,toasted sesame oil,oils,ml,,0.92,365,,180,false,sesame,"Oil, sesame, salad or cooking"
-88,white vinegar,vinegar;distilled vinegar,condiments,ml,,1.0,730,,730,false,,"Vinegar, distilled"
-89,soy sauce,shoyu,condiments,ml,,1.07,730,,365,false,soy;wheat;gluten,Soy sauce made from soy and wheat (shoyu)
+88,white vinegar,vinegar;distilled vinegar,condiments,ml,,1.0,730,,730,true,,"Vinegar, distilled"
+89,soy sauce,shoyu,condiments,ml,,1.07,730,,365,true,soy;wheat;gluten,Soy sauce made from soy and wheat (shoyu)
 90,ketchup,catsup;tomato ketchup,condiments,g,,1.13,180,,30,false,,Catsup
 91,mayonnaise,mayo,condiments,g,,0.92,60,,1,false,egg,"Salad dressing, mayonnaise, regular"
 92,mustard,yellow mustard,condiments,g,,1.0,365,,30,false,,"Mustard, prepared, yellow"
@@ -248,7 +248,7 @@ id,name,aliases,category,default_unit,grams_per_unit,density_g_per_ml,shelf_life
 247,molasses,treacle,baking,ml,,1.4,730,,730,false,,Molasses
 248,agave syrup,agave;agave nectar,baking,ml,,1.36,730,,730,false,,"Sweetener, syrup, agave"
 249,chili powder,chilli powder,spices,g,,0.54,1095,,1095,false,,"Spices, chili powder"
-250,onion powder,,spices,g,,0.48,1095,,1095,false,,"Spices, onion powder"
+250,onion powder,,spices,g,,0.48,1095,,1095,true,,"Spices, onion powder"
 251,turmeric,ground turmeric,spices,g,,0.6,1095,,1095,false,,"Spices, turmeric, ground"
 252,ground ginger,ginger powder,spices,g,,0.36,1095,,1095,false,,"Spices, ginger, ground"
 253,nutmeg,ground nutmeg,spices,g,,0.44,1095,,1095,false,,"Spices, nutmeg, ground"

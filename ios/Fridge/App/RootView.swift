@@ -14,11 +14,33 @@ struct RootView: View {
                     Task { await session.start() }
                 }
             case .ready(let user):
-                PantryListView(user: user)
+                ReadyView(user: user)
             }
         }
         .task { await session.start() }
         .task { await session.observeAuthChanges() }
+    }
+}
+
+/// Signed in: the pantry, with onboarding (F1.7) on top the first time.
+private struct ReadyView: View {
+    let user: AppUser
+    @State private var showOnboarding = false
+
+    var body: some View {
+        PantryListView(user: user)
+            .fullScreenCover(isPresented: $showOnboarding) {
+                OnboardingView(user: user) { showOnboarding = false }
+            }
+            .task(id: user.id) {
+                guard !OnboardingState.isDone(for: user.id) else { return }
+                // A reinstall with saved preferences skips onboarding.
+                if let prefs = try? await PrefsAPI.load(userId: user.id), OnboardingState.prefsLookConfigured(prefs) {
+                    OnboardingState.markDone(for: user.id)
+                } else {
+                    showOnboarding = true
+                }
+            }
     }
 }
 

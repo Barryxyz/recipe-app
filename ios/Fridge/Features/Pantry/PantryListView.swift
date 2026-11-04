@@ -22,7 +22,7 @@ struct PantryListView: View {
 
     @State private var showAdd = false
     @State private var editing: PantryItem?
-    @State private var showDebug = false
+    @State private var showSettings = false
     @State private var undo: UndoAction?
     @State private var actionError: String?
 
@@ -46,7 +46,7 @@ struct PantryListView: View {
                 .task { await load() }
                 .sheet(isPresented: $showAdd) { ItemFormView(mode: .add) { Task { await load() } } }
                 .sheet(item: $editing) { item in ItemFormView(mode: .edit(item)) { Task { await load() } } }
-                .sheet(isPresented: $showDebug) { DebugView(user: user) }
+                .sheet(isPresented: $showSettings) { SettingsView(user: user) }
                 .overlay(alignment: .bottom) { undoToast }
                 .confirmationDialog(
                     "Discard \(confirmDiscardExpired?.count ?? 0) expired item\(confirmDiscardExpired?.count == 1 ? "" : "s")?",
@@ -256,7 +256,8 @@ struct PantryListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button { showDebug = true } label: { Image(systemName: "info.circle") }
+            Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                .accessibilityLabel("Settings")
         }
         // Scan (F1.1) and Recipes (F2.1) join + when those features ship.
         ToolbarItemGroup(placement: .primaryAction) {
