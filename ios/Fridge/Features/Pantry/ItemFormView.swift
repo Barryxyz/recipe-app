@@ -173,11 +173,15 @@ struct ItemFormView: View {
                 .font(.title3)
             }
 
-            Picker("Location", selection: $draft.location) {
+            // Only a location the user picks carries over to the next item. The category
+            // default filled in by pick() must not, or it would stick for the whole session.
+            Picker("Location", selection: Binding(
+                get: { draft.location },
+                set: { draft.location = $0; if isAdd { sessionLocation = $0 } }
+            )) {
                 ForEach(StorageLocation.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
-            .onChange(of: draft.location) { _, new in if isAdd { sessionLocation = new } }
 
             Button { showExpiryEditor = true } label: {
                 HStack {
@@ -362,7 +366,6 @@ struct ItemFormView: View {
 
     private func addAndNext() async {
         guard await saveNew() else { return }
-        sessionLocation = draft.location
         draft = ItemDraft()
         query = ""
         recent = (try? await PantryAPI.recentIngredients()) ?? recent
