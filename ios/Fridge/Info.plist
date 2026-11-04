@@ -20,6 +20,8 @@
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Fridge uses the camera to photograph your fridge, freezer or pantry so it can list the food inside. Photos aren't stored.</string>
 	<key>SupabaseKey</key>
 	<string>$(SUPABASE_KEY)</string>
 	<key>SupabaseURL</key>

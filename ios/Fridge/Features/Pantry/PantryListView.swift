@@ -24,6 +24,7 @@ struct PantryListView: View {
     @State private var editing: PantryItem?
     @State private var showSettings = false
     @State private var showHistory = false
+    @State private var showScan = false
     @State private var undo: UndoAction?
     @State private var actionError: String?
 
@@ -49,6 +50,9 @@ struct PantryListView: View {
                 .sheet(item: $editing) { item in ItemFormView(mode: .edit(item)) { Task { await load() } } }
                 .sheet(isPresented: $showSettings) { SettingsView(user: user) }
                 .sheet(isPresented: $showHistory) { HistoryView { Task { await load() } } }
+                .fullScreenCover(isPresented: $showScan) {
+                    ScanView(onAddManually: { Task { try? await Task.sleep(for: .milliseconds(400)); showAdd = true } })
+                }
                 .overlay(alignment: .bottom) { undoToast }
                 .confirmationDialog(
                     "Discard \(confirmDiscardExpired?.count ?? 0) expired item\(confirmDiscardExpired?.count == 1 ? "" : "s")?",
@@ -81,13 +85,22 @@ struct PantryListView: View {
                 Button("Retry") { Task { await load() } }
             }
         } else if items.isEmpty {
-            // "Scan your fridge" joins "Add manually" here when scanning ships (F1.1).
+            // Both ways to add, equally weighted (F1.4).
             ContentUnavailableView {
                 Label("Your pantry is empty", systemImage: "refrigerator")
             } description: {
                 Text("Add what's in your fridge, freezer and cupboards.")
             } actions: {
-                Button("Add manually") { showAdd = true }.buttonStyle(.borderedProminent)
+                HStack {
+                    Button { showScan = true } label: {
+                        Label("Scan your fridge", systemImage: "camera").frame(maxWidth: .infinity)
+                    }
+                    Button { showAdd = true } label: {
+                        Label("Add manually", systemImage: "plus").frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
             }
         } else {
             List {
@@ -270,7 +283,7 @@ struct PantryListView: View {
                     .accessibilityLabel("History")
             }
         }
-        // Scan (F1.1) and Recipes (F2.1) join + when those features ship.
+        // Recipes (F2.1) joins these when it ships.
         ToolbarItemGroup(placement: .primaryAction) {
             Menu {
                 Picker("Sort by", selection: $sort) {
@@ -278,6 +291,8 @@ struct PantryListView: View {
                 }
             } label: { Image(systemName: "arrow.up.arrow.down") }
             .accessibilityLabel("Sort")
+            Button { showScan = true } label: { Image(systemName: "camera") }
+                .accessibilityLabel("Scan")
             Button { showAdd = true } label: { Image(systemName: "plus") }
                 .accessibilityLabel("Add items")
         }

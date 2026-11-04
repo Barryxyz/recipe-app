@@ -19,6 +19,13 @@ failed=0
 
 run_fn_checks() {
   command -v deno >/dev/null || { echo "  FAIL  deno is not installed"; failed=1; return; }
+  if out=$(deno test --quiet supabase/functions/_shared/ 2>&1); then
+    echo "  PASS  _shared unit tests"
+  else
+    echo "  FAIL  _shared unit tests"
+    printf '%s\n' "$out" | grep -E 'error|FAILED|expected' | head -10 | sed 's/^/        /'
+    failed=1
+  fi
   for dir in supabase/functions/*/; do
     name=$(basename "$dir")
     [ "$name" = _shared ] && continue

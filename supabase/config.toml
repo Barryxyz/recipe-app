@@ -428,3 +428,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/ai-test/deno.json"
 entrypoint = "./functions/ai-test/index.ts"
+
+[functions.scan-ingredients]
+enabled = true
+verify_jwt = false
+import_map = "./functions/scan-ingredients/deno.json"
+entrypoint = "./functions/scan-ingredients/index.ts"
