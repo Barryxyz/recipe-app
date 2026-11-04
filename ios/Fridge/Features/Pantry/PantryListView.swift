@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// F1.4: the home screen. Tabs (All / Fridge / Freezer / Pantry) with counts, expiry badges,
-/// "Use these first", search, grouped batches ("Milk ×2"), swipe Used / Discard with undo.
+/// "Use these first", search, grouped batches ("Milk ×2"), swipe left for Used / Discard with undo.
 struct PantryListView: View {
     let user: AppUser
 
@@ -156,8 +156,7 @@ struct PantryListView: View {
                               chevron: expanded.contains(group.id) ? .expanded : .collapsed)
                 }
                 .foregroundStyle(.primary)
-                .swipeActions(edge: .leading, allowsFullSwipe: true) { usedButton(group.earliest) }
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) { discardButton(group.earliest) }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) { swipeButtons(group.earliest) }
 
                 if expanded.contains(group.id) {
                     ForEach(group.items) { item in itemRow(item, showLocation: false, indented: true) }
@@ -176,8 +175,15 @@ struct PantryListView: View {
                 .padding(.leading, indented ? 20 : 0)
         }
         .foregroundStyle(.primary)
-        .swipeActions(edge: .leading, allowsFullSwipe: true) { usedButton(item) }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) { discardButton(item) }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) { swipeButtons(item) }
+    }
+
+    /// Swiping left reveals Used and Discard side by side (user's choice, option B).
+    /// Used comes first, so a full swipe marks the item used.
+    @ViewBuilder
+    private func swipeButtons(_ item: PantryItem) -> some View {
+        usedButton(item)
+        discardButton(item)
     }
 
     private func usedButton(_ item: PantryItem) -> some View {
