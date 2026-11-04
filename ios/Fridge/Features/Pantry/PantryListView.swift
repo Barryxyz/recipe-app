@@ -23,6 +23,7 @@ struct PantryListView: View {
     @State private var showAdd = false
     @State private var editing: PantryItem?
     @State private var showSettings = false
+    @State private var showHistory = false
     @State private var undo: UndoAction?
     @State private var actionError: String?
 
@@ -47,6 +48,7 @@ struct PantryListView: View {
                 .sheet(isPresented: $showAdd) { ItemFormView(mode: .add) { Task { await load() } } }
                 .sheet(item: $editing) { item in ItemFormView(mode: .edit(item)) { Task { await load() } } }
                 .sheet(isPresented: $showSettings) { SettingsView(user: user) }
+                .sheet(isPresented: $showHistory) { HistoryView { Task { await load() } } }
                 .overlay(alignment: .bottom) { undoToast }
                 .confirmationDialog(
                     "Discard \(confirmDiscardExpired?.count ?? 0) expired item\(confirmDiscardExpired?.count == 1 ? "" : "s")?",
@@ -261,8 +263,12 @@ struct PantryListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                .accessibilityLabel("Settings")
+            HStack {
+                Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                    .accessibilityLabel("Settings")
+                Button { showHistory = true } label: { Image(systemName: "clock.arrow.circlepath") }
+                    .accessibilityLabel("History")
+            }
         }
         // Scan (F1.1) and Recipes (F2.1) join + when those features ship.
         ToolbarItemGroup(placement: .primaryAction) {

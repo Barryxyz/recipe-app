@@ -19,6 +19,8 @@ struct PantryItem: Codable, Identifiable, Equatable {
     var source: Source
     /// Seasonings & Staples: shown in its own section; amount and expiry optional.
     var isStaple: Bool = false
+    /// When it was marked used or discarded (F1.8). Set by the database; nil while active.
+    var statusChangedAt: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -30,9 +32,10 @@ struct PantryItem: Codable, Identifiable, Equatable {
         case expiryOverridden = "expiry_overridden"
         case status, source
         case isStaple = "is_staple"
+        case statusChangedAt = "status_changed_at"
     }
 
-    static let columns = "id, ingredient_id, display_name, quantity, unit, location, added_at, expires_at, expiry_overridden, status, source, is_staple"
+    static let columns = "id, ingredient_id, display_name, quantity, unit, location, added_at, expires_at, expiry_overridden, status, source, is_staple, status_changed_at"
 
     /// Custom items (app.ingredients_private) have ids from 1e12 up; catalog ids are below.
     static let customIdStart: Int64 = 1_000_000_000_000
