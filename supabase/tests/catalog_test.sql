@@ -22,6 +22,10 @@ declare
     ['tomatos',       'tomato'],        -- typo, trigram match
     ['chicken breast','chicken breast'],
     ['evoo',          'olive oil'],
+    ['steak',         'sirloin steak'],  -- user feedback 2026-11-04: steak and fish were missing
+    ['fish',          'cod'],
+    ['aubergine',     'eggplant'],
+    ['chips',         'potato chips'],   -- US meaning, not fries
     ['50%',           ''],              -- LIKE wildcards are escaped
     ['_',             ''],
     ['',              ''],
@@ -34,7 +38,7 @@ begin
 
   ---------------------------------------------------------------- completeness (acceptance criteria)
   select count(*) into n from catalog.ingredients;
-  if n < 100 then failures := array_append(failures, format('only %s catalog items', n)); end if;
+  if n < 300 then failures := array_append(failures, format('only %s catalog items', n)); end if;
 
   select count(*) into n
     from catalog.ingredients i

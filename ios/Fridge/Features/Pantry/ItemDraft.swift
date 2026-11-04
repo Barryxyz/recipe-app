@@ -7,7 +7,7 @@ enum PantryDefaults {
     static func location(forCategory category: String?) -> StorageLocation {
         switch category {
         case "frozen": .freezer
-        case "bakery", "grains", "baking", "spices", "oils", "canned", "nuts": .pantry
+        case "bakery", "grains", "baking", "spices", "oils", "canned", "nuts", "snacks": .pantry
         default: .fridge
         }
     }

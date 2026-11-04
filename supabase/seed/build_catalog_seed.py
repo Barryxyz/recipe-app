@@ -53,12 +53,18 @@ def find_csv(root: Path, name: str) -> Path:
     return hits[0]
 
 
+FDP_SUFFIX = " (Includes foods for USDA's Food Distribution Program)"
+
+
 def load_usda(root: Path):
     foods = {}
     with open(find_csv(root, "food.csv"), newline="") as f:
         for row in csv.DictReader(f):
             if row["data_type"] == "sr_legacy_food":
                 foods[row["description"]] = row["fdc_id"]
+                # Also match without USDA's distribution-program suffix.
+                if row["description"].endswith(FDP_SUFFIX):
+                    foods.setdefault(row["description"][: -len(FDP_SUFFIX)], row["fdc_id"])
     wanted = set(foods.values())
     nutrients = {}
     with open(find_csv(root, "food_nutrient.csv"), newline="") as f:
@@ -124,6 +130,15 @@ def main():
                 errors.append(f"id {item['id']} ({item['name']}): USDA entry has no {col}")
         rows.append({**{c: item[c] for c in ITEM_COLS}, "fdc_id": fdc_id, "usda_description": desc,
                      **{c: n.get(c, "") for c in NUTRIENT_COLS}})
+
+    # A search term must lead to one item: no alias may equal another item's name or alias.
+    owner = {}
+    for item in items:
+        for term in [item["name"]] + [a for a in item["aliases"].split(";") if a]:
+            key = term.strip().lower()
+            if key in owner and owner[key] != item["id"]:
+                errors.append(f"'{term}' is used by id {owner[key]} and id {item['id']}")
+            owner.setdefault(key, item["id"])
 
     if errors:
         print("\n".join(errors), file=sys.stderr)

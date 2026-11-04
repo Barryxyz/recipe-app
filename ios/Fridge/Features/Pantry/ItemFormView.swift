@@ -474,6 +474,7 @@ enum CategoryIcon {
         case "canned": return "cylinder"
         case "nuts": return "circle.hexagongrid"
         case "drinks": return "cup.and.saucer"
+        case "snacks": return "popcorn"
         default: return "circle"
         }
     }

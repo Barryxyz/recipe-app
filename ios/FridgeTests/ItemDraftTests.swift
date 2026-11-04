@@ -14,7 +14,7 @@ final class ItemDraftTests: XCTestCase {
             XCTAssertEqual(PantryDefaults.location(forCategory: c), .fridge, c)
         }
         XCTAssertEqual(PantryDefaults.location(forCategory: "frozen"), .freezer)
-        for c in ["bakery", "grains", "baking", "spices", "oils", "canned", "nuts"] {
+        for c in ["bakery", "grains", "baking", "spices", "oils", "canned", "nuts", "snacks"] {
             XCTAssertEqual(PantryDefaults.location(forCategory: c), .pantry, c)
         }
         XCTAssertEqual(PantryDefaults.location(forCategory: nil), .fridge, "custom items")
