@@ -1,0 +1,39 @@
+{
+  "_comment": "F1.6 shared test table. Run against app.default_expiry (supabase/tests/expiry_test.sql) and ExpiryCalculator (ios/FridgeTests). Each case expects expires_at = 23:59:59 on expect_local_date in the case's timezone.",
+  "default_timezone": "America/Los_Angeles",
+  "catalog": [
+    { "id": 900001, "name": "test milk",    "fridge": 7,    "freezer": 90,   "pantry": 1 },
+    { "id": 900002, "name": "test chicken", "fridge": 2,    "freezer": 270,  "pantry": null },
+    { "id": 900003, "name": "test salt",    "fridge": 1825, "freezer": null, "pantry": 1825 }
+  ],
+  "user_overrides": [
+    { "ingredient_id": 900001, "location": "fridge", "days": 10, "deleted": false },
+    { "ingredient_id": 900002, "location": "fridge", "days": 5,  "deleted": true }
+  ],
+  "cases": [
+    { "name": "user default beats catalog",
+      "ingredient_id": 900001, "location": "fridge", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-03-20" },
+    { "name": "user default is per location (freezer uses catalog)",
+      "ingredient_id": 900001, "location": "freezer", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-06-08" },
+    { "name": "deleted user default is ignored (catalog)",
+      "ingredient_id": 900002, "location": "fridge", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-03-12" },
+    { "name": "catalog has no value for location -> fallback pantry 30",
+      "ingredient_id": 900002, "location": "pantry", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-04-09" },
+    { "name": "custom item -> fallback fridge 7",
+      "ingredient_id": 1000000000005, "location": "fridge", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-03-17" },
+    { "name": "no ingredient -> fallback freezer 90",
+      "ingredient_id": null, "location": "freezer", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-06-08" },
+    { "name": "unknown catalog id -> fallback",
+      "ingredient_id": 999999, "location": "fridge", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2026-03-17" },
+    { "name": "10:30 pm local counts as that local day",
+      "ingredient_id": 900002, "location": "fridge", "added_at": "2026-03-11T05:30:00Z", "expect_local_date": "2026-03-12" },
+    { "name": "same instant in UTC is the next day",
+      "ingredient_id": 900002, "location": "fridge", "added_at": "2026-03-11T05:30:00Z", "timezone": "UTC", "expect_local_date": "2026-03-13" },
+    { "name": "Tokyo: 01:00 local on the 11th",
+      "ingredient_id": 900002, "location": "fridge", "added_at": "2026-03-10T16:00:00Z", "timezone": "Asia/Tokyo", "expect_local_date": "2026-03-13" },
+    { "name": "expires on the DST change day",
+      "ingredient_id": null, "location": "fridge", "added_at": "2026-03-01T20:00:00Z", "expect_local_date": "2026-03-08" },
+    { "name": "long shelf life across a leap day",
+      "ingredient_id": 900003, "location": "fridge", "added_at": "2026-03-10T15:00:00Z", "expect_local_date": "2031-03-09" }
+  ]
+}

@@ -38,9 +38,22 @@ final class SessionStore {
                 .execute()
                 .value
             state = .ready(user)
+            await saveTimeZone(userId: user.id)
         } catch {
             state = .offline(SessionErrorPolicy.message(for: error))
         }
+    }
+
+    /// Expiry dates are end-of-day in the user's timezone (F1.6), so the server needs it.
+    /// Only writes when it changed. Best effort: a failure keeps the previous value.
+    private func saveTimeZone(userId: UUID) async {
+        let tz = TimeZone.current.identifier
+        _ = try? await supabase.schema("app")
+            .from("user_prefs")
+            .update(["timezone": tz])
+            .eq("user_id", value: userId)
+            .neq("timezone", value: tz)
+            .execute()
     }
 
     /// Restarts from first launch if the session ends (e.g. deleted on another device).

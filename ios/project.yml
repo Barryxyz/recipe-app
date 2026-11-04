@@ -50,6 +50,9 @@ targets:
     platform: iOS
     sources:
       - path: FridgeTests
+      # Shared with the SQL tests (F1.6): both implementations run the same cases.
+      - path: ../supabase/tests/expiry_cases.json
+        buildPhase: resources
     dependencies:
       - target: Fridge
       - package: Supabase

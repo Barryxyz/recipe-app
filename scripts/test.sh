@@ -34,7 +34,18 @@ run_fn_checks() {
 
 run_db_tests() {
   for f in supabase/tests/*.sql; do
-    out=$(supabase db query --remote --yes -f "$f" 2>&1)
+    # Shared case tables (also used by the Swift tests) are filled in here.
+    sqlfile=$(mktemp)
+    python3 -I - "$f" "$sqlfile" <<'PY'
+import sys
+src, dst = sys.argv[1], sys.argv[2]
+sql = open(src).read()
+if "__EXPIRY_CASES_JSON__" in sql:
+    sql = sql.replace("__EXPIRY_CASES_JSON__", open("supabase/tests/expiry_cases.json").read())
+open(dst, "w").write(sql)
+PY
+    out=$(supabase db query --remote --yes -f "$sqlfile" 2>&1)
+    rm -f "$sqlfile"
     result=$(printf '%s' "$out" | python3 -I -c '
 import json, sys
 t = sys.stdin.read()
@@ -65,7 +76,7 @@ run_ios_tests() {
   if xcodebuild test -project ios/Fridge.xcodeproj -scheme Fridge \
        -destination "platform=iOS Simulator,name=$sim" \
        -derivedDataPath ios/build/dd-sim CODE_SIGNING_ALLOWED=NO >"$log" 2>&1; then
-    echo "  PASS  iOS unit tests ($(grep -m1 -oE 'Executed [0-9]+ tests?' "$log" | tail -1), $sim)"
+    echo "  PASS  iOS unit tests ($(grep -oE 'Executed [0-9]+ tests?' "$log" | tail -1), $sim)"
   else
     echo "  FAIL  iOS unit tests"
     grep -E 'error:|failed \(' "$log" | head -20 | sed 's/^/        /'
