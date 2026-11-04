@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// F1.5: the add sheet (search, recent chips, Add & next) and the edit sheet (same form plus
+/// F1.5: the add sheet (search, recent chips, Add keeps the sheet open) and the edit sheet (same form plus
 /// Mark used / Discard / Delete). No AI calls.
 struct ItemFormView: View {
     enum Mode: Equatable {
@@ -50,7 +50,6 @@ struct ItemFormView: View {
                 if let editingItem { editActions(editingItem) }
                 if isAdd, let lastAdded { addedSection(lastAdded) }
             }
-            .safeAreaInset(edge: .bottom) { if isAdd { addBar } }
             .navigationTitle(isAdd ? "Add items" : "Edit item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
@@ -235,35 +234,20 @@ struct ItemFormView: View {
         }
     }
 
-    /// Pinned to the bottom of the sheet so it stays visible above the keyboard and while
-    /// scrolling a long result list (a bottom toolbar hides in both cases).
-    private var addBar: some View {
-        HStack(spacing: 12) {
-            Button { Task { await addAndNext() } } label: {
-                Label("Add & next", systemImage: "plus").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!draft.canAdd || changingIngredient || saving)
-
-            Button { Task { await done() } } label: {
-                Text("Done").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .disabled(saving)
-        }
-        .controlSize(.large)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.bar)
-    }
-
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button(isAdd && addedCount > 0 ? "Close" : "Cancel") { dismiss() }
         }
-        // In add mode, Add & next and Done live in addBar (always visible, above the keyboard).
-        if !isAdd {
+        if isAdd {
+            // One button: saves the item and keeps the sheet open for the next one.
+            // Close (left) ends the session.
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Add") { Task { await addAndNext() } }
+                    .fontWeight(.semibold)
+                    .disabled(!draft.canAdd || changingIngredient || saving)
+            }
+        } else {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { Task { await saveEdit(force: false) } }
                     .disabled(!draft.canSaveEdit || changingIngredient)
@@ -383,13 +367,6 @@ struct ItemFormView: View {
         query = ""
         recent = (try? await PantryAPI.recentIngredients()) ?? recent
         searchFocused = true
-    }
-
-    private func done() async {
-        if draft.canAdd && !changingIngredient {
-            guard await saveNew() else { return }
-        }
-        dismiss()
     }
 
     private func saveEdit(force: Bool) async {
