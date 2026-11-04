@@ -14,7 +14,7 @@ struct RootView: View {
                     Task { await session.start() }
                 }
             case .ready(let user):
-                DebugView(user: user)
+                PantryListView(user: user)
             }
         }
         .task { await session.start() }
