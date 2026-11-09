@@ -38,6 +38,8 @@ struct RecipesView: View {
     var body: some View {
         NavigationStack {
             List {
+                savedSection
+
                 Section {
                     ideasCard
                     if let lastSession, !lastSession.response.recipes.isEmpty { lastIdeasCard(lastSession) }
@@ -45,8 +47,6 @@ struct RecipesView: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-
-                savedSection
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Recipes")
@@ -169,15 +169,25 @@ struct RecipesView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            HStack(spacing: 12) {
-                if let t = r.totalMinutes { Label(MacroFormat.minutes(t), systemImage: "clock") }
-                if let m = r.macros_per_serving {
-                    Label("\(MacroFormat.prefix(m))\(MacroFormat.kcal(m.kcal)) kcal", systemImage: "flame")
+            // Fixed-width columns so time, calories and "Can make now" line up on every row.
+            HStack(spacing: 0) {
+                Group {
+                    if let t = r.totalMinutes { Label(MacroFormat.minutes(t), systemImage: "clock") } else { Text("") }
                 }
+                .frame(width: 92, alignment: .leading)
+                Group {
+                    if let m = r.macros_per_serving {
+                        Label("\(MacroFormat.prefix(m))\(MacroFormat.kcal(m.kcal)) kcal", systemImage: "flame")
+                    } else { Text("") }
+                }
+                .frame(width: 96, alignment: .leading)
                 if pantry.canMakeNow(r) {
                     Label("Can make now", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
                 }
+                Spacer(minLength: 0)
             }
+            .lineLimit(1)
+            .monospacedDigit()
             .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
