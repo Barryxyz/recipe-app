@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The Recipes tab: "Get recipe ideas" (F2.1) -> results (F2.4), and "Your last ideas" to reopen
-/// them until the next generation. Saved recipes are listed here later (F3.1).
+/// The Recipes tab: "Get recipe ideas" (F2.1) -> results (F2.4), "Your last ideas", and the
+/// saved recipes (F3.1) with search, filters and swipe to delete with undo (F3.3).
 struct RecipesView: View {
     let user: AppUser
 
@@ -13,6 +13,14 @@ struct RecipesView: View {
     @State private var loadError: String?
     @State private var showScan = false
     @State private var showAdd = false
+
+    @State private var saved: [SavedRecipe] = []
+    @State private var pantry = PantryMatcher()
+    @State private var loadedSaved = false
+    @State private var search = ""
+    @State private var filters: Set<SavedRecipeFilter> = []
+    @State private var deleted: SavedRecipe?
+    @State private var actionError: String?
 
     struct SheetInput: Identifiable {
         let id = UUID()
@@ -29,18 +37,25 @@ struct RecipesView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
+            List {
+                Section {
                     ideasCard
                     if let lastSession, !lastSession.response.recipes.isEmpty { lastIdeasCard(lastSession) }
-                    ContentUnavailableView("No saved recipes yet", systemImage: "book.closed",
-                                           description: Text("Recipes you save will appear here."))
-                        .padding(.top, 24)
                 }
-                .padding()
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+
+                savedSection
             }
+            .listStyle(.insetGrouped)
             .navigationTitle("Recipes")
+            .navigationDestination(for: SavedRecipe.self) { r in RecipeDetailView(recipe: r.asRecipe(pantry: pantry)) }
+            .modifier(SearchIfNeeded(enabled: !saved.isEmpty, text: $search))
+            .refreshable { await loadSaved() }
+            .task { await loadSaved() }
             .onAppear { lastSession = RecipeSession.load() }
+            .overlay(alignment: .bottom) { undoToast }
             .sheet(item: $sheet) { input in
                 RecipeOptionsView(pantry: input.pantry, options: input.options, excluded: input.excluded,
                                   usage: usage,
@@ -52,7 +67,10 @@ struct RecipesView: View {
                                   onScan: { showScan = true },
                                   onAddManually: { showAdd = true })
             }
-            .fullScreenCover(item: $results, onDismiss: { lastSession = RecipeSession.load() }) { input in
+            .fullScreenCover(item: $results, onDismiss: {
+                lastSession = RecipeSession.load()
+                Task { await loadSaved() }
+            }) { input in
                 RecipeResultsView(initial: input.session, request: input.request, requestsLeft: usage?.left,
                                   onChangeOptions: { request in
                                       results = nil
@@ -73,8 +91,141 @@ struct RecipesView: View {
             .alert("Couldn't load your pantry", isPresented: .constant(loadError != nil)) {
                 Button("OK") { loadError = nil }
             } message: { Text(loadError ?? "") }
+            .alert("Something went wrong", isPresented: .constant(actionError != nil)) {
+                Button("OK") { actionError = nil }
+            } message: { Text(actionError ?? "") }
         }
     }
+
+    // MARK: Saved recipes
+
+    private var shown: [SavedRecipe] {
+        SavedRecipeSearch.filter(saved, search: search, filters: filters, pantry: pantry)
+    }
+
+    @ViewBuilder private var savedSection: some View {
+        if !loadedSaved {
+            Section { ProgressView().frame(maxWidth: .infinity) }
+        } else if saved.isEmpty {
+            Section {
+                ContentUnavailableView("No saved recipes yet", systemImage: "book.closed",
+                                       description: Text("Tap Save on a recipe idea to keep it here."))
+            }
+        } else {
+            Section {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(SavedRecipeFilter.allCases) { f in
+                            let on = filters.contains(f)
+                            Button {
+                                if on { filters.remove(f) } else { filters.insert(f) }
+                            } label: {
+                                Text(f.title).font(.subheadline)
+                                    .padding(.horizontal, 12).padding(.vertical, 6)
+                                    .background(on ? Color.accentColor.opacity(0.18) : Color(.secondarySystemFill), in: Capsule())
+                                    .overlay(Capsule().stroke(on ? Color.accentColor : .clear, lineWidth: 1.5))
+                                    .foregroundStyle(on ? Color.accentColor : .primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+
+                if shown.isEmpty {
+                    Text(search.isEmpty ? "No saved recipes match these filters." : "No saved recipes match \u{201C}\(search)\u{201D}.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(shown) { r in
+                    NavigationLink(value: r) { savedRow(r) }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) { Task { await delete(r) } } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                }
+            } header: {
+                Text("Saved recipes (\(saved.count))")
+            }
+        }
+    }
+
+    private func savedRow(_ r: SavedRecipe) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(r.title).font(.headline)
+                if let tag = r.tag {
+                    Text(tag).font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 12) {
+                if let t = r.totalMinutes { Label(MacroFormat.minutes(t), systemImage: "clock") }
+                if let m = r.macros_per_serving {
+                    Label("\(MacroFormat.prefix(m))\(MacroFormat.kcal(m.kcal)) kcal", systemImage: "flame")
+                }
+                if pantry.canMakeNow(r) {
+                    Label("Can make now", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                }
+            }
+            .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func loadSaved() async {
+        async let items = try? PantryAPI.activeItems()
+        do {
+            saved = try await SavedRecipesAPI.list()
+        } catch {
+            if !loadedSaved { actionError = "Couldn't load your saved recipes. Pull down to try again." }
+        }
+        pantry = PantryMatcher(await items ?? [])
+        loadedSaved = true
+    }
+
+    private func delete(_ r: SavedRecipe) async {
+        withAnimation { saved.removeAll { $0.id == r.id } }
+        do {
+            try await SavedRecipesAPI.setDeleted(r.id, true)
+            withAnimation { deleted = r }
+            let shownFor = r.id
+            try? await Task.sleep(for: .seconds(5))
+            if deleted?.id == shownFor { withAnimation { deleted = nil } }
+        } catch {
+            await loadSaved()
+            actionError = "Couldn't delete the recipe."
+        }
+    }
+
+    private func undoDelete() async {
+        guard let r = deleted else { return }
+        withAnimation { deleted = nil }
+        do {
+            try await SavedRecipesAPI.setDeleted(r.id, false)
+        } catch {
+            actionError = "Couldn't restore the recipe."
+        }
+        await loadSaved()
+    }
+
+    @ViewBuilder private var undoToast: some View {
+        if let deleted {
+            HStack {
+                Text("\u{201C}\(deleted.title)\u{201D} deleted").lineLimit(1)
+                Spacer()
+                Button("Undo") { Task { await undoDelete() } }.fontWeight(.semibold)
+            }
+            .padding()
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .padding()
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    // MARK: Ideas
 
     private var ideasCard: some View {
         Button { Task { await openOptions(from: nil) } } label: {
@@ -93,6 +244,7 @@ struct RecipesView: View {
             .padding()
             .background(Color.accentColor.gradient, in: RoundedRectangle(cornerRadius: 16))
         }
+        .buttonStyle(.plain)
         .disabled(loading)
     }
 
@@ -110,9 +262,9 @@ struct RecipesView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.tertiary)
             }
             .padding()
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
         }
-        .foregroundStyle(.primary)
+        .buttonStyle(.plain)
     }
 
     /// Opens the options sheet: fresh defaults, or the options of a previous request.
@@ -133,4 +285,17 @@ struct RecipesView: View {
             loadError = error.localizedDescription
         }
     }
+}
+
+/// Search only once there's something to search.
+private struct SearchIfNeeded: ViewModifier {
+    let enabled: Bool
+    @Binding var text: String
+    func body(content: Content) -> some View {
+        if enabled { content.searchable(text: $text, prompt: "Search saved recipes") } else { content }
+    }
+}
+
+extension SavedRecipe: Hashable {
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }

@@ -34,7 +34,10 @@ struct RecipeResultsView: View {
                         ToolbarItem(placement: .cancellationAction) { Button("Done") { task?.cancel(); onClose() } }
                     }
                 }
-                .navigationDestination(for: RecipeAPI.Recipe.self) { RecipeDetailView(recipe: $0) }
+                .navigationDestination(for: RecipeAPI.Recipe.self) { recipe in
+                    RecipeDetailView(recipe: recipe, initiallySaved: savedId(recipe) != nil,
+                                     onSave: { try await save(recipe) })
+                }
         }
         .onAppear {
             guard current == nil else { return }
@@ -64,6 +67,24 @@ struct RecipeResultsView: View {
         case .none(let note, let fixes): noRecipes(note: note, fixes: fixes)
         case .failed(let error): failed(error)
         }
+    }
+
+    // MARK: Save (F3.1)
+
+    private var session: RecipeSession? {
+        if case .results(let s) = phase { return s }
+        return nil
+    }
+
+    private func savedId(_ r: RecipeAPI.Recipe) -> UUID? { session?.savedIds?[r.temp_id] }
+
+    private func save(_ r: RecipeAPI.Recipe) async throws {
+        guard savedId(r) == nil else { return }       // never saved twice
+        let id = try await SavedRecipesAPI.save(r)
+        guard var s = session else { return }
+        s.savedIds = (s.savedIds ?? [:]).merging([r.temp_id: id]) { $1 }
+        s.save()
+        phase = .results(s)
     }
 
     // MARK: Generate
@@ -159,7 +180,7 @@ struct RecipeResultsView: View {
             }
             Section {
                 ForEach(session.response.recipes) { recipe in
-                    NavigationLink(value: recipe) { RecipeCard(recipe: recipe) }
+                    NavigationLink(value: recipe) { RecipeCard(recipe: recipe, saved: session.savedIds?[recipe.temp_id] != nil) }
                 }
             } footer: {
                 Text("Nutrition is approximate.")
@@ -225,10 +246,18 @@ struct RecipeResultsView: View {
 /// One result card: title, description, time, kcal and P/C/F, expiring and missing.
 struct RecipeCard: View {
     let recipe: RecipeAPI.Recipe
+    var saved = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(recipe.title).font(.headline)
+            HStack(alignment: .firstTextBaseline) {
+                Text(recipe.title).font(.headline)
+                Spacer()
+                if saved {
+                    Label("Saved", systemImage: "bookmark.fill").font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
             Text(recipe.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             HStack(spacing: 12) {
                 Label(MacroFormat.minutes(recipe.totalMinutes), systemImage: "clock")

@@ -7,6 +7,8 @@ struct RecipeSession: Codable, Equatable {
     var request: RecipeRequest
     var response: RecipeAPI.Response
     var createdAt = Date()
+    /// temp_id -> saved recipe id (F3.1), so Save shows "Saved ✓" when the results are reopened.
+    var savedIds: [String: UUID]?
 
     private static var url: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]

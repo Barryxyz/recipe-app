@@ -4,7 +4,14 @@ import SwiftUI
 /// from, and the screen stays on while it's open.
 struct RecipeDetailView: View {
     let recipe: RecipeAPI.Recipe
+    /// Generated recipes: Save (F3.1). Nil for recipes that are already saved.
+    var initiallySaved = false
+    var onSave: (() async throws -> Void)? = nil
+
     @State private var showTotal = false
+    @State private var saved: Bool?
+    @State private var saving = false
+    @State private var saveError: String?
 
     var body: some View {
         List {
@@ -60,6 +67,29 @@ struct RecipeDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let onSave {
+                ToolbarItem(placement: .primaryAction) {
+                    if saved ?? initiallySaved {
+                        Label("Saved", systemImage: "checkmark").labelStyle(.titleAndIcon).foregroundStyle(.secondary)
+                    } else {
+                        Button {
+                            Task {
+                                saving = true
+                                defer { saving = false }
+                                do { try await onSave(); saved = true } catch { saveError = error.localizedDescription }
+                            }
+                        } label: {
+                            if saving { ProgressView() } else { Label("Save", systemImage: "bookmark").labelStyle(.titleAndIcon) }
+                        }
+                        .disabled(saving)
+                    }
+                }
+            }
+        }
+        .alert("Couldn't save", isPresented: .constant(saveError != nil)) {
+            Button("OK") { saveError = nil }
+        } message: { Text(saveError ?? "") }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
