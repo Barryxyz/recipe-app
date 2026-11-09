@@ -79,8 +79,8 @@ private extension ReadyView {
 struct AppTabBar: View {
     @Binding var selection: AppTab
     let bottomInset: CGFloat
-    /// Bar height above the home-indicator area.
-    static let height: CGFloat = 56
+    /// Bar height above the home-indicator area (the standard tab bar is 49).
+    static let height: CGFloat = 50
 
     var body: some View {
         VStack(spacing: 0) {
@@ -88,8 +88,11 @@ struct AppTabBar: View {
             HStack {
                 ForEach(AppTab.allCases, id: \.self) { t in
                     Button { selection = t } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: t.icon).font(.system(size: 21, weight: .medium))
+                        // Icon and title as one block, centred together.
+                        VStack(spacing: 2) {
+                            Image(systemName: t.icon)
+                                .font(.system(size: 19, weight: .medium))
+                                .frame(height: 22)          // same height for both icons
                             Text(t.title).font(.caption2.weight(.medium))
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -100,10 +103,10 @@ struct AppTabBar: View {
                     .accessibilityAddTraits(selection == t ? [.isSelected, .isButton] : .isButton)
                 }
             }
-            // Centred in the bar plus half the home-indicator area, so items sit in the middle
-            // of what you see without crowding the indicator.
-            .frame(height: Self.height + bottomInset * 0.5)
-            Color.clear.frame(height: bottomInset * 0.5)
+            // Centred in the visible bar: the bar plus the part of the home-indicator area
+            // above the indicator itself.
+            .frame(height: Self.height + bottomInset * 0.35)
+            Color.clear.frame(height: bottomInset * 0.65)
         }
         .background(Color(.systemBackground))
     }
