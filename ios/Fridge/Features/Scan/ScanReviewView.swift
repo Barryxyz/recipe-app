@@ -13,6 +13,7 @@ struct ScanReviewView: View {
 
     @State private var editing: ScanReview.Row?
     @State private var showAdd = false
+    @State private var checking = false
     @State private var confirmDiscard = false
     @State private var saving = false
     @State private var saveError: String?
@@ -38,6 +39,9 @@ struct ScanReviewView: View {
         .sheet(item: $editing) { row in
             ItemFormView(mode: .reviewEdit(row.draft), onDraft: { review.update(row.id, draft: $0) })
         }
+        .sheet(isPresented: $checking) {
+            CheckItemsView(review: $review, detail: { "\($0.draft.placement.title) · \(expiryText($0.draft))" })
+        }
         .sheet(isPresented: $showAdd) {
             ItemFormView(mode: .reviewAdd, onDraft: { review.add($0) })
         }
@@ -58,8 +62,15 @@ struct ScanReviewView: View {
             Section {
                 Text(header).font(.headline)
                 if review.unsureCount > 0 {
-                    Label("\(review.unsureCount) item\(review.unsureCount == 1 ? "" : "s") to check", systemImage: "exclamationmark.triangle.fill")
-                        .font(.subheadline).foregroundStyle(.orange)
+                    Button { checking = true } label: {
+                        HStack {
+                            Label("\(review.unsureCount) item\(review.unsureCount == 1 ? "" : "s") to check", systemImage: "exclamationmark.triangle.fill")
+                                .font(.subheadline).foregroundStyle(.orange)
+                            Spacer()
+                            Text("Check").font(.subheadline.weight(.semibold))
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                        }
+                    }
                 }
             }
             ForEach(sections, id: \.title) { section in

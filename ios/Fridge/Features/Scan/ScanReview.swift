@@ -98,6 +98,12 @@ struct ScanReview: Codable, Equatable, Identifiable {
 
     var unsureCount: Int { rows.filter(\.lowConfidence).count }
 
+    /// The user checked an unsure row and it's right (or they fixed it).
+    mutating func confirm(_ id: Row.ID) {
+        guard let i = rows.firstIndex(where: { $0.id == id }) else { return }
+        rows[i].lowConfidence = false
+    }
+
     mutating func update(_ id: Row.ID, draft: ItemDraft) {
         guard let i = rows.firstIndex(where: { $0.id == id }) else { return }
         let renamed = rows[i].draft.ingredient?.id != draft.ingredient?.id

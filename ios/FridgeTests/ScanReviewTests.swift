@@ -145,3 +145,16 @@ final class ScanReviewTests: XCTestCase {
         XCTAssertEqual(ScanAPI.map(code: 429, data: body), .limitReached("You've used today's 10 scans."))
     }
 }
+
+extension ScanReviewTests {
+    func testConfirmClearsCheckFlagOnly() {
+        var r = ScanReview(scan: ScanAPI.Response(location: "fridge", items: [
+            ScanAPI.DraftItem(temp_id: "1", name: "jar", ingredient_id: nil, display_name: "jar", category: nil,
+                              match: "none", quantity: 1, unit: "each", confidence: 0.4, low_confidence: true,
+                              suggest_staple: false, photo_indexes: [0])], usage: nil), placement: .fridge)
+        r.confirm(r.rows[0].id)
+        XCTAssertEqual(r.unsureCount, 0)
+        XCTAssertTrue(r.rows[0].isCustom, "still saved as a custom item")
+        XCTAssertEqual(r.saveCount, 1)
+    }
+}
