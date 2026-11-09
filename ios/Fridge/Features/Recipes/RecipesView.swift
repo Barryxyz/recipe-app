@@ -51,12 +51,7 @@ struct RecipesView: View {
             .listStyle(.insetGrouped)
             .scrollDismissesKeyboard(.immediately)
             .navigationTitle("Recipes")
-            .navigationDestination(for: SavedRecipe.self) { r in
-                // Unsave here = delete; Save again restores the same recipe.
-                RecipeDetailView(recipe: r.asRecipe(pantry: pantry), initiallySaved: true,
-                                 onSave: { try await SavedRecipesAPI.setDeleted(r.id, false) },
-                                 onUnsave: { try await SavedRecipesAPI.setDeleted(r.id, true) })
-            }
+            .navigationDestination(for: SavedRecipe.self) { r in SavedRecipeDetailView(recipe: r, pantry: pantry) }
             .refreshable { await loadSaved() }
             .onAppear {
                 // Also runs when coming back from a recipe, so unsaved ones disappear.

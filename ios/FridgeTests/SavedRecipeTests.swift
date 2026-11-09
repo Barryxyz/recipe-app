@@ -88,3 +88,103 @@ final class SavedRecipeTests: XCTestCase {
         }
     }
 }
+
+/// F3.2: editor rules.
+final class RecipeEditDraftTests: XCTestCase {
+    private func draft() -> RecipeEditDraft {
+        RecipeEditDraft(title: "Chicken", servings: 2, prepMin: 10, cookMin: 20, ingredients: [
+            .init(ingredientId: 52, name: "chicken breast", quantity: 300, unit: "g", grams: 300, note: "", isOptional: false),
+            .init(ingredientId: nil, name: "lime", quantity: 1, unit: "each", grams: 67, note: "juiced", isOptional: false),
+            .init(ingredientId: 85, name: "olive oil", quantity: 1, unit: "tbsp", grams: 14, note: "", isOptional: false),
+            .init(ingredientId: nil, name: "salt", quantity: nil, unit: "to taste", grams: nil, note: "", isOptional: false),
+        ], steps: [.init(text: "Cook.")])
+    }
+
+    func testScalingTwoToFourDoublesEverything() {
+        var d = draft()
+        d.scale(to: 4)
+        XCTAssertEqual(d.servings, 4)
+        XCTAssertEqual(d.ingredients.map(\.quantity), [600, 2, 2, nil])
+        XCTAssertEqual(d.ingredients.map(\.grams), [600, 134, 28, nil], "weights scale too, so per-serving macros stay the same")
+    }
+
+    func testScalingRoundsToKitchenAmounts() {
+        var d = draft()
+        d.scale(to: 3)
+        XCTAssertEqual(d.ingredients[0].quantity, 450)
+        XCTAssertEqual(d.ingredients[1].quantity, 1.5)
+        var small = draft()
+        small.ingredients[2].quantity = 0.5
+        small.scale(to: 1)
+        XCTAssertEqual(small.ingredients[2].quantity, 0.25, "never rounds down to 0")
+        XCTAssertEqual(RecipeEditDraft.round(0.6667, unit: "cup"), 0.75)
+        XCTAssertEqual(RecipeEditDraft.round(1.23, unit: "kg"), 1.2)
+        XCTAssertEqual(RecipeEditDraft.round(0.2, unit: "g"), 1)
+    }
+
+    func testWeightFollowsEdits() {
+        var d = draft()
+        var lime = d.ingredients[1]
+        lime.quantity = 2
+        d.update(lime)
+        XCTAssertEqual(d.ingredients[1].grams, 134, "same unit, new amount: weight scaled")
+        var oil = d.ingredients[2]
+        oil.unit = "ml"
+        d.update(oil)
+        XCTAssertNil(d.ingredients[2].grams, "new unit: old weight dropped")
+        var chicken = d.ingredients[0]
+        chicken.name = "chicken thighs"; chicken.ingredientId = 53
+        d.update(chicken)
+        XCTAssertNil(d.ingredients[0].grams, "different ingredient: old weight dropped")
+        var noteOnly = d.ingredients[1]
+        noteOnly.note = "zested"
+        d.update(noteOnly)
+        XCTAssertEqual(d.ingredients[1].grams, 134, "a note doesn't touch the weight")
+    }
+
+    func testValidation() {
+        var d = draft()
+        XCTAssertTrue(d.isValid)
+        d.title = "  "
+        d.description = String(repeating: "x", count: 301)
+        d.cookMin = 601
+        d.steps.append(.init(text: " "))
+        XCTAssertEqual(Set(d.errors.keys), [.title, .description, .cook, .steps])
+        d.ingredients = []
+        d.steps = []
+        XCTAssertEqual(d.errors[.ingredients], "Add at least one ingredient.")
+        XCTAssertEqual(d.errors[.steps], "Add at least one step.")
+        d.title = String(repeating: "x", count: 81)
+        XCTAssertEqual(d.errors[.title], "At most 80 characters.")
+    }
+
+    func testNeedsMacros() {
+        let original = draft()
+        var d = original
+        d.title = "New name"
+        d.steps[0].text = "Cook well."
+        d.ingredients[1].note = "zested"
+        XCTAssertFalse(d.needsMacros(comparedTo: original), "text-only edits keep the macros")
+        d.ingredients[0].quantity = 400
+        XCTAssertTrue(d.needsMacros(comparedTo: original))
+        var s = original
+        s.servings = 3
+        XCTAssertTrue(s.needsMacros(comparedTo: original))
+        var o = original
+        o.ingredients[1].isOptional = true
+        XCTAssertTrue(o.needsMacros(comparedTo: original), "optional items aren't counted")
+    }
+
+    func testFromSavedRecipeAndPayload() throws {
+        let saved = SavedRecipe(id: UUID(), title: "Chicken", prepMin: 10, cookMin: nil, ingredients: [
+            .init(position: 0, ingredient_id: 52, name: "chicken", quantity: 300, unit: "g", grams: 300, note: nil, is_optional: false)])
+        var d = RecipeEditDraft(saved)
+        XCTAssertEqual(d.steps.map(\.text), ["Cook."])
+        d.title = "  Better chicken "
+        let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(d.payload())) as! [String: Any]
+        XCTAssertEqual(json["title"] as? String, "Better chicken")
+        XCTAssertEqual((json["ingredients"] as? [[String: Any]])?.first?["grams"] as? Double, 300)
+        XCTAssertEqual(RecipeEditDraft.units(including: "clove").last, "clove")
+        XCTAssertFalse(RecipeEditDraft.units(including: "g").contains(where: { $0 == "" }))
+    }
+}

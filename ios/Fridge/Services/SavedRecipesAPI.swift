@@ -35,6 +35,24 @@ enum SavedRecipesAPI {
         return try await app.rpc("save_recipe", params: Params(recipe: recipe)).execute().value
     }
 
+    static func get(_ id: UUID) async throws -> SavedRecipe {
+        try await app.from("recipes").select(columns).eq("id", value: id).single().execute().value
+    }
+
+    /// Replaces the recipe's fields and ingredients in one transaction (F3.2).
+    static func update(_ id: UUID, _ draft: RecipeEditDraft) async throws {
+        struct Params: Encodable { let p_id: UUID; let recipe: RecipeEditDraft.Payload }
+        try await app.rpc("update_recipe", params: Params(p_id: id, recipe: draft.payload())).execute()
+    }
+
+    /// Server-side macros from catalog data (F2.3).
+    static func recomputeMacros(_ id: UUID) async throws {
+        struct Body: Encodable { let recipe_id: UUID }
+        struct Out: Decodable { let recipe_id: String }
+        let _: Out = try await supabase.functions.invoke(
+            "recompute-macros", options: FunctionInvokeOptions(body: Body(recipe_id: id), timeoutInterval: 60))
+    }
+
     /// Soft delete (F3.3): undo just clears deleted_at.
     static func setDeleted(_ id: UUID, _ deleted: Bool) async throws {
         struct Row: Encodable {

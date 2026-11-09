@@ -8,6 +8,14 @@ struct RecipeDetailView: View {
     var initiallySaved = false
     var onSave: (() async throws -> Void)? = nil
     var onUnsave: (() async throws -> Void)? = nil
+    /// Saved recipes: Edit (F3.2) and the state of the nutrition recalculation.
+    var onEdit: (() -> Void)? = nil
+    var macroStatus: MacroStatus? = nil
+
+    enum MacroStatus {
+        case updating
+        case outOfDate(retry: () -> Void)
+    }
 
     @State private var showTotal = false
     @State private var saved: Bool?
@@ -40,7 +48,17 @@ struct RecipeDetailView: View {
                 .pickerStyle(.segmented)
                 .textCase(nil)
             } footer: {
-                Text(macroFootnote)
+                switch macroStatus {
+                case .updating:
+                    HStack(spacing: 6) { ProgressView().controlSize(.mini); Text("Updating nutrition…") }
+                case .outOfDate(let retry):
+                    HStack {
+                        Label("Nutrition out of date", systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+                        Button("Retry", action: retry).font(.footnote.weight(.semibold))
+                    }
+                case nil:
+                    Text(macroFootnote)
+                }
             }
 
             Section("Ingredients") {
@@ -69,6 +87,9 @@ struct RecipeDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if let onEdit {
+                ToolbarItem(placement: .primaryAction) { Button("Edit", action: onEdit) }
+            }
             if let onSave, let onUnsave {
                 ToolbarItem(placement: .primaryAction) {
                     let isSaved = saved ?? initiallySaved
