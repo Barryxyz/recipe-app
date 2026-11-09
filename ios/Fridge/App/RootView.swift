@@ -29,20 +29,20 @@ private struct ReadyView: View {
 
     @State private var tab: AppTab = .pantry
 
+    init(user: AppUser) {
+        self.user = user
+        AppTabBar.applyAppearance()
+    }
+
     var body: some View {
-        GeometryReader { geo in
-            // Both tabs stay alive so each keeps its place, search and scroll position.
-            ZStack {
-                tabContent(.pantry) { PantryListView(user: user) }
-                tabContent(.recipes) { RecipesView(user: user) }
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: AppTabBar.height) }
-            .overlay(alignment: .bottom) {
-                AppTabBar(selection: $tab, bottomInset: geo.safeAreaInsets.bottom)
-                    .ignoresSafeArea(edges: .bottom)
-            }
+        TabView(selection: $tab) {
+            PantryListView(user: user)
+                .tabItem { Label(AppTab.pantry.title, systemImage: AppTab.pantry.icon) }
+                .tag(AppTab.pantry)
+            RecipesView(user: user)
+                .tabItem { Label(AppTab.recipes.title, systemImage: AppTab.recipes.icon) }
+                .tag(AppTab.recipes)
         }
-        .ignoresSafeArea(.keyboard)
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
             }
@@ -65,50 +65,15 @@ enum AppTab: CaseIterable {
     var icon: String { self == .pantry ? "refrigerator" : "fork.knife" }
 }
 
-private extension ReadyView {
-    func tabContent<V: View>(_ t: AppTab, @ViewBuilder _ view: () -> V) -> some View {
-        view()
-            .opacity(tab == t ? 1 : 0)
-            .allowsHitTesting(tab == t)
-            .accessibilityHidden(tab != t)
-    }
-}
-
-/// Solid (not translucent) tab bar with its items centred in the visible bar, kept clear of
-/// the home indicator.
-struct AppTabBar: View {
-    @Binding var selection: AppTab
-    let bottomInset: CGFloat
-    /// Bar height above the home-indicator area (the standard tab bar is 49).
-    static let height: CGFloat = 50
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            HStack {
-                ForEach(AppTab.allCases, id: \.self) { t in
-                    Button { selection = t } label: {
-                        // Icon and title as one block, centred together.
-                        VStack(spacing: 2) {
-                            Image(systemName: t.icon)
-                                .font(.system(size: 19, weight: .medium))
-                                .frame(height: 22)          // same height for both icons
-                            Text(t.title).font(.caption2.weight(.medium))
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .contentShape(Rectangle())
-                        .foregroundStyle(selection == t ? Color.accentColor : Color.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selection == t ? [.isSelected, .isButton] : .isButton)
-                }
-            }
-            // Centred in the visible bar: the bar plus the part of the home-indicator area
-            // above the indicator itself.
-            .frame(height: Self.height + bottomInset * 0.35)
-            Color.clear.frame(height: bottomInset * 0.65)
-        }
-        .background(Color(.systemBackground))
+/// The standard iPhone tab bar, solid instead of translucent (like most fitness and food apps).
+enum AppTabBar {
+    static func applyAppearance() {
+        let a = UITabBarAppearance()
+        a.configureWithOpaqueBackground()
+        a.backgroundColor = .systemBackground
+        a.shadowColor = .separator            // thin line above the bar
+        UITabBar.appearance().standardAppearance = a
+        UITabBar.appearance().scrollEdgeAppearance = a
     }
 }
 
