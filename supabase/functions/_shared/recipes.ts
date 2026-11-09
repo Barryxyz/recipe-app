@@ -109,7 +109,7 @@ Hard rules (a recipe that breaks one is thrown away):
 - Respect the allergies and diets exactly, including hidden sources (pesto has nuts, soy sauce has wheat and soy, Worcestershire has fish, mayonnaise has egg).
 - Stay within the time limit (prep + cook).
 - Use metric or common kitchen units (g, kg, ml, l, tsp, tbsp, cup, each). For every ingredient also give "grams": your estimate of its weight.
-- Steps are clear, numbered by order, and include safe internal temperatures for meat (pork 63 °C / 145 °F, ground meat 71 °C / 160 °F), poultry (74 °C / 165 °F), fish (63 °C / 145 °F) and egg dishes (cook until set).
+- Steps are clear, in order, one instruction each, without step numbers (the app numbers them), and include safe internal temperatures for meat (pork 63 °C / 145 °F, ground meat 71 °C / 160 °F), poultry (74 °C / 165 °F), fish (63 °C / 145 °F) and egg dishes (cook until set).
 
 Quality rules:
 - Only combine ingredients that genuinely go well together. A recipe does not need to use every pantry item.
@@ -251,6 +251,13 @@ export function outIngredients(rec: ModelRecipe, ctx: Context): OutIngredient[] 
       is_optional: ing.is_optional,
     };
   });
+}
+
+/** "1. Heat the oil" / "Step 2: Add" -> the instruction alone. */
+export function stripStepNumber(step: string): string {
+  const t = step.trim();
+  const rest = t.replace(/^(?:step\s*)?\d+\s*[.):\-–]\s*/i, "");
+  return rest || t;
 }
 
 /** Names of expiring pantry items (≤ 3 days) the recipe uses. */

@@ -119,3 +119,14 @@ enum MacroFormat {
         n < 60 ? "\(n) min" : (n % 60 == 0 ? "\(n / 60) h" : "\(n / 60) h \(n % 60) min")
     }
 }
+
+enum RecipeText {
+    /// "1. Heat the oil" / "Step 2: Add" / "3) Stir" -> the instruction alone (the app numbers steps).
+    static func stepWithoutNumber(_ step: String) -> String {
+        let trimmed = step.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pattern = #"^(?:step\s*)?\d+\s*[.):\-–]\s*"#
+        guard let range = trimmed.range(of: pattern, options: [.regularExpression, .caseInsensitive]) else { return trimmed }
+        let rest = trimmed[range.upperBound...]
+        return rest.isEmpty ? trimmed : String(rest)
+    }
+}

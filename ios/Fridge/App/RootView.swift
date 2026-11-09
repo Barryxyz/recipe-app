@@ -27,13 +27,22 @@ private struct ReadyView: View {
     let user: AppUser
     @State private var showOnboarding = false
 
+    @State private var tab: AppTab = .pantry
+
     var body: some View {
-        TabView {
-            PantryListView(user: user)
-                .tabItem { Label("Pantry", systemImage: "refrigerator") }
-            RecipesView(user: user)
-                .tabItem { Label("Recipes", systemImage: "fork.knife") }
+        GeometryReader { geo in
+            // Both tabs stay alive so each keeps its place, search and scroll position.
+            ZStack {
+                tabContent(.pantry) { PantryListView(user: user) }
+                tabContent(.recipes) { RecipesView(user: user) }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: AppTabBar.height) }
+            .overlay(alignment: .bottom) {
+                AppTabBar(selection: $tab, bottomInset: geo.safeAreaInsets.bottom)
+                    .ignoresSafeArea(edges: .bottom)
+            }
         }
+        .ignoresSafeArea(.keyboard)
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
             }
@@ -46,6 +55,57 @@ private struct ReadyView: View {
                     showOnboarding = true
                 }
             }
+    }
+}
+
+enum AppTab: CaseIterable {
+    case pantry, recipes
+
+    var title: String { self == .pantry ? "Pantry" : "Recipes" }
+    var icon: String { self == .pantry ? "refrigerator" : "fork.knife" }
+}
+
+private extension ReadyView {
+    func tabContent<V: View>(_ t: AppTab, @ViewBuilder _ view: () -> V) -> some View {
+        view()
+            .opacity(tab == t ? 1 : 0)
+            .allowsHitTesting(tab == t)
+            .accessibilityHidden(tab != t)
+    }
+}
+
+/// Solid (not translucent) tab bar with its items centred in the visible bar, kept clear of
+/// the home indicator.
+struct AppTabBar: View {
+    @Binding var selection: AppTab
+    let bottomInset: CGFloat
+    /// Bar height above the home-indicator area.
+    static let height: CGFloat = 56
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack {
+                ForEach(AppTab.allCases, id: \.self) { t in
+                    Button { selection = t } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: t.icon).font(.system(size: 21, weight: .medium))
+                            Text(t.title).font(.caption2.weight(.medium))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .foregroundStyle(selection == t ? Color.accentColor : Color.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selection == t ? [.isSelected, .isButton] : .isButton)
+                }
+            }
+            // Centred in the bar plus half the home-indicator area, so items sit in the middle
+            // of what you see without crowding the indicator.
+            .frame(height: Self.height + bottomInset * 0.5)
+            Color.clear.frame(height: bottomInset * 0.5)
+        }
+        .background(Color(.systemBackground))
     }
 }
 

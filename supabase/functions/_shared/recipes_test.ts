@@ -2,7 +2,7 @@
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
 import type { IngredientInfo } from "./macros.ts";
 import {
-  plausibleQuantity,
+  plausibleQuantity, stripStepNumber,
   buildPrompt, type Context, type ModelOutput, type ModelRecipe, needsFallback, outIngredients, type PantryRow,
   type RecipeRequest, runPipeline, usesExpiring, validateRecipe,
 } from "./recipes.ts";
@@ -230,4 +230,10 @@ Deno.test("pipeline: no fallback once the time budget is used up", async () => {
   assertEquals(c.count(), 1, "fallback skipped");
   assert(!r.ok && r.error === "validation_failed");
   assertEquals(r.attempts[1].reasons, ["skipped: out of time"]);
+});
+
+Deno.test("step numbers are stripped", () => {
+  assertEquals(stripStepNumber("1. Heat the oil."), "Heat the oil.");
+  assertEquals(stripStepNumber("Step 2: Add garlic"), "Add garlic");
+  assertEquals(stripStepNumber("2 eggs go in"), "2 eggs go in");
 });

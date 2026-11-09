@@ -80,6 +80,15 @@ final class RecipeResultsTests: XCTestCase {
         XCTAssertEqual(back.request, session.request)
     }
 
+    func testStepNumbersAreRemoved() {
+        XCTAssertEqual(RecipeText.stepWithoutNumber("1. Heat the oil."), "Heat the oil.")
+        XCTAssertEqual(RecipeText.stepWithoutNumber("Step 2: Add the garlic."), "Add the garlic.")
+        XCTAssertEqual(RecipeText.stepWithoutNumber("3) Stir"), "Stir")
+        XCTAssertEqual(RecipeText.stepWithoutNumber("  10 - Serve"), "Serve")
+        XCTAssertEqual(RecipeText.stepWithoutNumber("2 eggs go in the pan"), "2 eggs go in the pan", "a quantity isn't a step number")
+        XCTAssertEqual(RecipeText.stepWithoutNumber("Bake at 200 °C."), "Bake at 200 °C.")
+    }
+
     func testErrorMapping() {
         let body = { (code: String) in Data(#"{"error":{"code":"\#(code)","message":"msg"}}"#.utf8) }
         XCTAssertEqual(RecipeAPI.map(code: 502, data: body("validation_failed")), .noGoodRecipes)

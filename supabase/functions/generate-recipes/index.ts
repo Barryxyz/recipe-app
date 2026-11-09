@@ -9,7 +9,7 @@ import { computeMacros, CUSTOM_ID_START, resolveIngredients } from "../_shared/m
 import { nutritionEstimator, supabaseStore } from "../_shared/nutrition.ts";
 import {
   buildPrompt, type Context, MAX_PANTRY_ROWS, ModelOutput, outIngredients, type PantryRow, plausibleQuantity,
-  RequestSchema, runPipeline, SYSTEM, usesExpiring,
+  RequestSchema, runPipeline, stripStepNumber, SYSTEM, usesExpiring,
 } from "../_shared/recipes.ts";
 
 const Check = z.object({ check: z.literal(true) });
@@ -134,7 +134,7 @@ export default {
         prep_min: rec.prep_min,
         cook_min: rec.cook_min,
         ingredients,
-        steps: rec.steps.map((s) => s.trim()).filter(Boolean),
+        steps: rec.steps.map(stripStepNumber).filter(Boolean),
         macros_per_serving: macros.per_serving,
         macros_total: macros.total,
         uses_expiring: usesExpiring(rec, ctx),
