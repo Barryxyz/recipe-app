@@ -1,20 +1,30 @@
 import SwiftUI
 
-/// The Recipes tab. Today: "Get recipe ideas" (F2.1). Saved recipes are listed here later (F3.1).
+/// The Recipes tab: "Get recipe ideas" (F2.1) -> results (F2.4), and "Your last ideas" to reopen
+/// them until the next generation. Saved recipes are listed here later (F3.1).
 struct RecipesView: View {
     let user: AppUser
 
     @State private var sheet: SheetInput?
+    @State private var results: ResultsInput?
+    @State private var lastSession: RecipeSession?
+    @State private var usage: RecipeAPI.Usage?
     @State private var loading = false
     @State private var loadError: String?
     @State private var showScan = false
     @State private var showAdd = false
-    @State private var lastRequest: RecipeRequest?
 
     struct SheetInput: Identifiable {
         let id = UUID()
         let pantry: RecipePantry
         let options: RecipeOptions
+        let excluded: Set<UUID>
+    }
+
+    struct ResultsInput: Identifiable {
+        let id = UUID()
+        let request: RecipeRequest
+        let session: RecipeSession?
     }
 
     var body: some View {
@@ -22,6 +32,7 @@ struct RecipesView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     ideasCard
+                    if let lastSession, !lastSession.response.recipes.isEmpty { lastIdeasCard(lastSession) }
                     ContentUnavailableView("No saved recipes yet", systemImage: "book.closed",
                                            description: Text("Recipes you save will appear here."))
                         .padding(.top, 24)
@@ -29,11 +40,30 @@ struct RecipesView: View {
                 .padding()
             }
             .navigationTitle("Recipes")
+            .onAppear { lastSession = RecipeSession.load() }
             .sheet(item: $sheet) { input in
-                RecipeOptionsView(pantry: input.pantry, options: input.options,
-                                  onGenerate: { request in sheet = nil; lastRequest = request },
+                RecipeOptionsView(pantry: input.pantry, options: input.options, excluded: input.excluded,
+                                  usage: usage,
+                                  onGenerate: { request in
+                                      sheet = nil
+                                      Task { try? await Task.sleep(for: .milliseconds(350))
+                                          results = ResultsInput(request: request, session: nil) }
+                                  },
                                   onScan: { showScan = true },
                                   onAddManually: { showAdd = true })
+            }
+            .fullScreenCover(item: $results, onDismiss: { lastSession = RecipeSession.load() }) { input in
+                RecipeResultsView(initial: input.session, request: input.request, requestsLeft: usage?.left,
+                                  onChangeOptions: { request in
+                                      results = nil
+                                      Task { try? await Task.sleep(for: .milliseconds(350))
+                                          await openOptions(from: request) }
+                                  },
+                                  onAddItems: {
+                                      results = nil
+                                      Task { try? await Task.sleep(for: .milliseconds(350)); showAdd = true }
+                                  },
+                                  onClose: { results = nil })
             }
             .fullScreenCover(isPresented: $showScan) {
                 ScanView(onAddManually: { Task { try? await Task.sleep(for: .milliseconds(400)); showAdd = true } },
@@ -43,17 +73,11 @@ struct RecipesView: View {
             .alert("Couldn't load your pantry", isPresented: .constant(loadError != nil)) {
                 Button("OK") { loadError = nil }
             } message: { Text(loadError ?? "") }
-            // Placeholder until generation (F2.2) and results (F2.4) are built.
-            .alert("Request ready", isPresented: .constant(lastRequest != nil)) {
-                Button("OK") { lastRequest = nil }
-            } message: {
-                Text(lastRequest.map(summary) ?? "")
-            }
         }
     }
 
     private var ideasCard: some View {
-        Button { Task { await openOptions() } } label: {
+        Button { Task { await openOptions(from: nil) } } label: {
             HStack(spacing: 14) {
                 Image(systemName: "sparkles").font(.title)
                 VStack(alignment: .leading, spacing: 4) {
@@ -72,25 +96,41 @@ struct RecipesView: View {
         .disabled(loading)
     }
 
-    private func openOptions() async {
+    private func lastIdeasCard(_ s: RecipeSession) -> some View {
+        Button { results = ResultsInput(request: s.request, session: s) } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Your last ideas").font(.headline)
+                    Text(s.response.recipes.map(\.title).joined(separator: " · "))
+                        .font(.subheadline).foregroundStyle(.secondary).lineLimit(2).multilineTextAlignment(.leading)
+                    Text(s.createdAt.formatted(.relative(presentation: .named)))
+                        .font(.caption).foregroundStyle(.tertiary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        }
+        .foregroundStyle(.primary)
+    }
+
+    /// Opens the options sheet: fresh defaults, or the options of a previous request.
+    private func openOptions(from request: RecipeRequest?) async {
         loading = true
         defer { loading = false }
         do {
             async let prefs = try? PrefsAPI.load(userId: user.id)
+            async let left = try? RecipeAPI.usage()
             let items = try await PantryAPI.activeItems()
             let servings = await prefs?.defaultServings ?? 2
-            sheet = SheetInput(pantry: RecipePantry(items),
-                               options: .initial(defaultServings: servings, remembered: RecipeOptions.loadRemembered()))
+            usage = await left
+            let options = request?.options
+                ?? .initial(defaultServings: servings, remembered: RecipeOptions.loadRemembered())
+            sheet = SheetInput(pantry: RecipePantry(items), options: options,
+                               excluded: Set(request?.exclude_pantry_item_ids ?? []))
         } catch {
             loadError = error.localizedDescription
         }
-    }
-
-    private func summary(_ r: RecipeRequest) -> String {
-        let time = r.max_minutes.map { "\($0) min" } ?? "any time"
-        return "\(r.servings) servings · \(r.meal) · \(time) · \(r.cuisine ?? "any cuisine")" +
-            "\(r.only_on_hand ? " · only what I have" : "")" +
-            "\(r.exclude_pantry_item_ids.isEmpty ? "" : " · \(r.exclude_pantry_item_ids.count) left out")" +
-            "\n\nRecipe generation is the next step (F2.2)."
     }
 }

@@ -4,12 +4,14 @@ import SwiftUI
 struct RecipeOptionsView: View {
     let pantry: RecipePantry
     @State var options: RecipeOptions
+    @State var excluded: Set<UUID> = []
+    /// Shown only when few requests are left (F2.4).
+    var usage: RecipeAPI.Usage? = nil
     var onGenerate: (RecipeRequest) -> Void
     var onScan: () -> Void
     var onAddManually: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var excluded: Set<UUID> = []
     @State private var customCuisine = ""
 
     var body: some View {
@@ -113,6 +115,9 @@ struct RecipeOptionsView: View {
 
     private var generateBar: some View {
         VStack(spacing: 8) {
+            if let usage, usage.left <= 5 {
+                Text(usage.text).font(.footnote).foregroundStyle(usage.left == 0 ? .red : .secondary)
+            }
             if let warning {
                 Label(warning.message, systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote).foregroundStyle(.orange)
@@ -125,7 +130,7 @@ struct RecipeOptionsView: View {
                 Label("Generate", systemImage: "sparkles").frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent).controlSize(.large)
-            .disabled(warning == .nothingSelected)
+            .disabled(warning == .nothingSelected || usage?.left == 0)
         }
         .padding()
         .background(.bar)

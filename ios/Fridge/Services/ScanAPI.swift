@@ -65,7 +65,7 @@ enum ScanAPI {
         }
     }
 
-    private static var decoder: JSONDecoder {
+    static var decoder: JSONDecoder {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .custom { dec in
             let raw = try dec.singleValueContainer().decode(String.self)

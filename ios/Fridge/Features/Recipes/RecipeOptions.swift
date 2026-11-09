@@ -118,14 +118,14 @@ struct RecipePantry: Equatable {
 }
 
 /// The body sent to generate-recipes (F2.2).
-struct RecipeRequest: Encodable, Equatable {
-    let servings: Int
-    let max_minutes: Int?
-    let meal: String
-    let cuisine: String?
-    let prefer_expiring: Bool
-    let only_on_hand: Bool
-    let exclude_pantry_item_ids: [UUID]
+struct RecipeRequest: Codable, Equatable {
+    var servings: Int
+    var max_minutes: Int?
+    var meal: String
+    var cuisine: String?
+    var prefer_expiring: Bool
+    var only_on_hand: Bool
+    var exclude_pantry_item_ids: [UUID]
 
     init(options o: RecipeOptions, excluding: Set<UUID>) {
         servings = RecipeOptions.clampServings(o.servings)
@@ -135,6 +135,12 @@ struct RecipeRequest: Encodable, Equatable {
         prefer_expiring = o.preferExpiring
         only_on_hand = o.onlyOnHand
         exclude_pantry_item_ids = excluding.sorted { $0.uuidString < $1.uuidString }
+    }
+
+    /// The sheet's options for this request ("Change options" from the results).
+    var options: RecipeOptions {
+        RecipeOptions(servings: servings, maxMinutes: max_minutes, meal: Meal(rawValue: meal) ?? .any, cuisine: cuisine,
+                      preferExpiring: prefer_expiring, onlyOnHand: only_on_hand)
     }
 
     /// Encodes missing values as null so the server sees every field.
