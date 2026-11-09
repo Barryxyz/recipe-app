@@ -37,11 +37,13 @@ private struct ReadyView: View {
     var body: some View {
         TabView(selection: $tab) {
             PantryListView(user: user)
-                .tabItem { Label(AppTab.pantry.title, systemImage: AppTab.pantry.icon) }
+                .tabItem { AppTabBar.label(.pantry) }
                 .tag(AppTab.pantry)
+                .background(TabBarHeight(extra: AppTabBar.extraHeight))
             RecipesView(user: user)
-                .tabItem { Label(AppTab.recipes.title, systemImage: AppTab.recipes.icon) }
+                .tabItem { AppTabBar.label(.recipes) }
                 .tag(AppTab.recipes)
+                .background(TabBarHeight(extra: AppTabBar.extraHeight))
         }
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
@@ -67,6 +69,25 @@ enum AppTab: CaseIterable {
 
 /// The standard iPhone tab bar, solid instead of translucent (like most fitness and food apps).
 enum AppTabBar {
+    /// Space added above each icon, and to the bar's height, so icons don't hug the top edge.
+    static let iconTopSpace: CGFloat = 5
+    static let extraHeight: CGFloat = 6
+
+    static func label(_ tab: AppTab) -> some View {
+        Label { Text(tab.title) } icon: { Image(uiImage: icon(tab.icon)) }
+    }
+
+    /// The SF Symbol drawn with transparent space above it (tab bars have no icon offset setting).
+    static func icon(_ name: String) -> UIImage {
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        guard let base = UIImage(systemName: name, withConfiguration: config) else { return UIImage() }
+        let size = CGSize(width: base.size.width, height: base.size.height + iconTopSpace)
+        let image = UIGraphicsImageRenderer(size: size).image { _ in
+            base.draw(at: CGPoint(x: 0, y: iconTopSpace))
+        }
+        return image.withRenderingMode(.alwaysTemplate)
+    }
+
     static func applyAppearance() {
         let a = UITabBarAppearance()
         a.configureWithOpaqueBackground()
@@ -74,6 +95,30 @@ enum AppTabBar {
         a.shadowColor = .separator            // thin line above the bar
         UITabBar.appearance().standardAppearance = a
         UITabBar.appearance().scrollEdgeAppearance = a
+    }
+}
+
+/// Makes the system tab bar a little taller: its height follows the tab bar controller's bottom
+/// safe area, so a few points of extra inset give the items more room.
+private struct TabBarHeight: UIViewControllerRepresentable {
+    let extra: CGFloat
+
+    func makeUIViewController(context: Context) -> Finder { Finder(extra: extra) }
+    func updateUIViewController(_ vc: Finder, context: Context) {}
+
+    final class Finder: UIViewController {
+        let extra: CGFloat
+        init(extra: CGFloat) { self.extra = extra; super.init(nibName: nil, bundle: nil) }
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            var vc: UIViewController? = parent
+            while let current = vc, !(current is UITabBarController) { vc = current.parent }
+            if let tabs = vc as? UITabBarController, tabs.additionalSafeAreaInsets.bottom != extra {
+                tabs.additionalSafeAreaInsets.bottom = extra
+            }
+        }
     }
 }
 
