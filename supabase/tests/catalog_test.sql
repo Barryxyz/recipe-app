@@ -52,6 +52,15 @@ begin
   select count(*) into n from catalog.ingredients where default_unit = 'each' and grams_per_unit is null;
   if n > 0 then failures := array_append(failures, format('%s "each" items without grams_per_unit', n)); end if;
 
+  -- F2.3: foods recipes measure in cups/spoons need a density. Meat, fish, grains (mostly
+  -- by weight) and snacks are exempt; liquids default to ml and are covered above.
+  select count(*) into n from catalog.ingredients
+   where default_unit in ('g', 'ml') and density_g_per_ml is null
+     and category in ('produce', 'dairy', 'frozen', 'nuts', 'canned', 'baking', 'condiments', 'protein',
+                      'spices', 'oils', 'sauces')
+     and name <> 'frozen french fries';
+  if n > 0 then failures := array_append(failures, format('%s cup-measured items without density', n)); end if;
+
   select count(*) into n from catalog.ingredients
    where not allergens <@ array['milk','egg','fish','shellfish','tree nuts','peanuts','wheat','soy','sesame','gluten'];
   if n > 0 then failures := array_append(failures, format('%s items with unknown allergen tags', n)); end if;

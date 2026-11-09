@@ -434,3 +434,10 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/scan-ingredients/deno.json"
 entrypoint = "./functions/scan-ingredients/index.ts"
+
+
+[functions.recompute-macros]
+enabled = true
+verify_jwt = false
+import_map = "./functions/recompute-macros/deno.json"
+entrypoint = "./functions/recompute-macros/index.ts"

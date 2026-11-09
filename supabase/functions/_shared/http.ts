@@ -18,7 +18,8 @@ export type ErrorCode =
   | "ai_failed"
   | "validation_failed"
   | "timeout"
-  | "limit_reached";
+  | "limit_reached"
+  | "not_found";
 
 const STATUS: Record<ErrorCode, number> = {
   unauthorized: 401,
@@ -30,6 +31,7 @@ const STATUS: Record<ErrorCode, number> = {
   validation_failed: 502,
   timeout: 504,
   limit_reached: 429,
+  not_found: 404,
 };
 
 const CORS = {
@@ -64,12 +66,36 @@ export function aiEndpoint(
   name: string,
   handler: (ctx: AiRequestContext) => Promise<unknown>,
 ): (req: Request) => Promise<Response> {
+  return endpoint(name, handler, { ai: true });
+}
+
+/**
+ * Whether this user may trigger model calls right now: AI switched on and, when required,
+ * a verified purchase (F0.6). For endpoints that work without AI but use it when allowed.
+ */
+export async function hasAiAccess(userId: string, supabaseAdmin: SupabaseClient): Promise<boolean> {
+  if (!aiEnabled()) return false;
+  if (!purchaseRequired()) return true;
+  const { data } = await supabaseAdmin.schema("app").from("users")
+    .select("purchase_verified_at").eq("id", userId).maybeSingle();
+  return Boolean(data?.purchase_verified_at);
+}
+
+/**
+ * Auth, size limit and error handling. With `ai: true` also the kill switch (first) and the
+ * purchase check; without it, the endpoint works for every signed-in user.
+ */
+export function endpoint(
+  name: string,
+  handler: (ctx: AiRequestContext) => Promise<unknown>,
+  opts: { ai: boolean },
+): (req: Request) => Promise<Response> {
   return async (req) => {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (req.method !== "POST") return errorResponse("bad_request", "Use POST.");
 
     // Kill switch first: no auth or body work while AI is off.
-    if (!aiEnabled()) {
+    if (opts.ai && !aiEnabled()) {
       return errorResponse("ai_disabled", "AI features are temporarily unavailable.");
     }
 
@@ -92,7 +118,7 @@ export function aiEndpoint(
       }
     }
 
-    if (purchaseRequired()) {
+    if (opts.ai && purchaseRequired()) {
       const { data: user, error } = await sb.supabaseAdmin
         .schema("app").from("users").select("purchase_verified_at").eq("id", userId).maybeSingle();
       if (error || !user?.purchase_verified_at) {
