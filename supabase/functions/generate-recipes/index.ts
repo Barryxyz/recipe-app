@@ -4,12 +4,12 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import { z } from "npm:zod@4.6.7";
 import { callModel } from "../_shared/ai.ts";
 import { effortFor, modelFor, recipeLimits } from "../_shared/config.ts";
-import { aiEndpoint, HttpError } from "../_shared/http.ts";
+import { aiEndpoint, HttpError, log } from "../_shared/http.ts";
 import { computeMacros, CUSTOM_ID_START, resolveIngredients } from "../_shared/macros.ts";
 import { nutritionEstimator, supabaseStore } from "../_shared/nutrition.ts";
 import {
-  buildPrompt, type Context, MAX_PANTRY_ROWS, ModelOutput, outIngredients, type PantryRow, RequestSchema,
-  runPipeline, SYSTEM, usesExpiring,
+  buildPrompt, type Context, MAX_PANTRY_ROWS, ModelOutput, outIngredients, type PantryRow, plausibleQuantity,
+  RequestSchema, runPipeline, SYSTEM, usesExpiring,
 } from "../_shared/recipes.ts";
 
 const Check = z.object({ check: z.literal(true) });
@@ -18,6 +18,7 @@ const MAX_STAPLES = 80;
 
 export default {
   fetch: aiEndpoint("generate-recipes", async ({ body, userId, supabase, supabaseAdmin }) => {
+    log({ fn: "generate-recipes", stage: "start" });
     const limits = recipeLimits();
     const readUsage = async () => {
       const { data, error } = await supabaseAdmin.schema("app").rpc("ai_usage", { p_kind: "recipes", p_user: userId });
@@ -83,7 +84,7 @@ export default {
       const c = i.ingredient_id != null ? catalog.get(Number(i.ingredient_id)) : undefined;
       return {
         ref, pantry_item_id: i.id, ingredient_id: i.ingredient_id == null ? null : Number(i.ingredient_id),
-        name: i.display_name, quantity: i.quantity == null ? null : Number(i.quantity), unit: i.unit,
+        name: i.display_name, quantity: plausibleQuantity(i.quantity == null ? null : Number(i.quantity), i.unit), unit: i.unit,
         location: i.location, days_left: i.days_left, is_staple: i.is_staple,
         tags: c?.allergens ?? [], category: c?.category ?? null,
       };
@@ -98,6 +99,7 @@ export default {
 
     // ---- model, checks, fallback
     const prompt = buildPrompt(ctx);
+    log({ fn: "generate-recipes", stage: "model", pantry: regular.length, staples: staples.length });
     const call = (kind: "recipes" | "fallback") => () =>
       callModel({
         kind: kind === "recipes" ? "recipes" : "recipes_fallback",   // only first calls count toward the limit
@@ -110,7 +112,8 @@ export default {
         userId,
         supabaseAdmin,
       });
-    const result = await runPipeline(ctx, call("recipes"), call("fallback"));
+    // The app waits up to 90 s: no fallback after 35 s.
+    const result = await runPipeline(ctx, call("recipes"), call("fallback"), { fallbackCutoffMs: 35_000 });
     if (!result.ok) {
       throw new HttpError(result.error, result.error === "validation_failed"
         ? "Couldn't come up with good recipes with these options."

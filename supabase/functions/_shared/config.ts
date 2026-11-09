@@ -17,7 +17,7 @@ const MODEL_DEFAULTS: Record<AiKind, [envVar: string, model: string]> = {
 const EFFORT_DEFAULTS: Record<AiKind, [envVar: string, effort: Effort]> = {
   scan: ["SCAN_EFFORT", "medium"],        // listing visible food is recognition, not deep reasoning; raise if the eval says so
   recipes: ["RECIPE_EFFORT", "low"],        // measured 2026-11-09: low = 17 s median vs 21.6 s, same quality checks passed
-  fallback: ["FALLBACK_EFFORT", "high"],
+  fallback: ["FALLBACK_EFFORT", "medium"],  // high took too long for an interactive request
   estimate: ["ESTIMATE_EFFORT", "low"],
   test: ["RECIPE_EFFORT", "medium"],
 };

@@ -75,6 +75,18 @@ export interface Context {
   info: Map<number, IngredientInfo>;
 }
 
+/**
+ * A pantry amount we can trust, or null ("some"). Placeholder amounts like "1 g pasta" or
+ * "1 ml almond milk" (a quick manual add) would otherwise make every recipe that uses the
+ * item fail the quantity check.
+ */
+export function plausibleQuantity(quantity: number | null, unit: string | null): number | null {
+  if (quantity == null || quantity <= 0) return null;
+  const u = normalizeUnit(unit);
+  if ((u === "g" || u === "ml") && quantity < 10) return null;
+  return quantity;
+}
+
 // ---------------------------------------------------------------- prompt
 
 const DIET_TEXT: Record<string, string> = {
@@ -284,12 +296,22 @@ export type PipelineResult =
  * Primary model, checks, and at most one fallback call (F2.2 steps 3-5). Never forces a
  * recipe: an answer with fewer recipes and a note is final.
  */
-export async function runPipeline(ctx: Context, primary: Call, fallback: Call): Promise<PipelineResult> {
+export async function runPipeline(
+  ctx: Context, primary: Call, fallback: Call,
+  /** No fallback once this much time has passed (keeps the request well under the app's timeout). */
+  opts: { fallbackCutoffMs?: number; now?: () => number } = {},
+): Promise<PipelineResult> {
+  const now = opts.now ?? Date.now;
+  const started = now();
   const attempts: Attempt[] = [];
   const results: { recipes: ModelRecipe[]; out: ModelOutput; model: string }[] = [];
   let lastError: "validation_failed" | "ai_failed" | "timeout" = "validation_failed";
 
   for (const call of [primary, fallback]) {
+    if (call === fallback && opts.fallbackCutoffMs != null && now() - started > opts.fallbackCutoffMs) {
+      attempts.push({ model: "fallback", ok: false, returned: 0, passed: 0, reasons: ["skipped: out of time"] });
+      break;
+    }
     const r = await call();
     if (!r.ok) {
       attempts.push({ model: r.model, ok: false, returned: 0, passed: 0, reasons: [r.reason] });

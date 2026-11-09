@@ -21,6 +21,7 @@ struct RecipeResultsView: View {
     @State private var phase: Phase = .loading
     @State private var current: RecipeRequest?
     @State private var task: Task<Void, Never>?
+    @State private var started = Date()
     @State private var confirmRegenerate = false
 
     var body: some View {
@@ -30,7 +31,7 @@ struct RecipeResultsView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     if phase != .loading {
-                        ToolbarItem(placement: .cancellationAction) { Button("Done") { onClose() } }
+                        ToolbarItem(placement: .cancellationAction) { Button("Done") { task?.cancel(); onClose() } }
                     }
                 }
                 .navigationDestination(for: RecipeAPI.Recipe.self) { RecipeDetailView(recipe: $0) }
@@ -40,7 +41,6 @@ struct RecipeResultsView: View {
             current = request
             if let initial { phase = .results(initial) } else { run(request) }
         }
-        .onDisappear { task?.cancel() }
         .confirmationDialog("Replace these recipes?", isPresented: $confirmRegenerate, titleVisibility: .visible) {
             Button("Regenerate") { run(current ?? request) }
         } message: { Text("You'll get new ideas with the same options. Save any you want to keep first.") }
@@ -71,15 +71,17 @@ struct RecipeResultsView: View {
     private func run(_ r: RecipeRequest) {
         current = r
         phase = .loading
+        started = .now
         task?.cancel()
         task = Task {
             do {
                 let response = try await RecipeAPI.generate(r)
+                if Task.isCancelled { return }
                 let session = RecipeSession(request: r, response: response)
                 session.save()
                 phase = .results(session)
             } catch is CancellationError {
-                return
+                return   // only the user cancels (Cancel / Done), and they've left this screen
             } catch RecipeAPI.RecipeError.noGoodRecipes {
                 phase = .none(note: "Couldn't come up with good recipes with these options.",
                               fixes: RecipeFix.fixes(for: r, limitedBy: []))
@@ -94,32 +96,56 @@ struct RecipeResultsView: View {
 
     // MARK: Loading
 
-    private static let lines = ["Checking what's expiring…", "Looking at your pantry…", "Matching your preferences…",
-                                "Writing recipes…", "Checking allergens…", "Working out nutrition…"]
+    /// Steps shown once, in order, timed to a typical ~17 s request. They don't loop.
+    private static let steps: [(after: Double, text: String)] = [
+        (0, "Reading your pantry"),
+        (2, "Choosing ingredients that go together"),
+        (6, "Writing recipes"),
+        (13, "Checking allergens and amounts"),
+        (17, "Working out nutrition"),
+    ]
 
     private var loading: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            ProgressView().controlSize(.large)
-            TimelineView(.periodic(from: .now, by: 3)) { context in
-                let i = Int(context.date.timeIntervalSinceReferenceDate / 3) % Self.lines.count
-                Text(Self.lines[i]).font(.headline).foregroundStyle(.secondary)
-                    .contentTransition(.opacity)
-                    .animation(.easeInOut, value: i)
+        TimelineView(.periodic(from: started, by: 1)) { context in
+            let elapsed = context.date.timeIntervalSince(started)
+            let current = Self.steps.lastIndex { elapsed >= $0.after } ?? 0
+            VStack(spacing: 28) {
+                Spacer()
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Array(Self.steps.enumerated()), id: \.offset) { i, step in
+                        HStack(spacing: 12) {
+                            Group {
+                                if i < current {
+                                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                                } else if i == current {
+                                    ProgressView()
+                                } else {
+                                    Image(systemName: "circle").foregroundStyle(.quaternary)
+                                }
+                            }
+                            .frame(width: 22)
+                            Text(step.text)
+                                .foregroundStyle(i <= current ? .primary : .tertiary)
+                                .fontWeight(i == current ? .semibold : .regular)
+                        }
+                    }
+                }
+                Text(elapsed > 30 ? "Taking a little longer than usual…" : "Usually about 15–20 seconds")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Spacer()
+                Button("Cancel") {
+                    task?.cancel()
+                    onChangeOptions(self.current ?? request)
+                }
+                .buttonStyle(.bordered)
+                if let left = requestsLeft, left <= 3 {
+                    Text("A cancelled request still counts toward today's limit.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
-            Text("This usually takes 15–20 seconds.").font(.footnote).foregroundStyle(.tertiary)
-            Spacer()
-            Button("Cancel") {
-                task?.cancel()
-                onChangeOptions(current ?? request)
-            }
-            .buttonStyle(.bordered)
-            if let left = requestsLeft, left <= 3 {
-                Text("A cancelled request still counts toward today's limit.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+            .padding()
+            .animation(.easeInOut, value: current)
         }
-        .padding()
     }
 
     // MARK: Results

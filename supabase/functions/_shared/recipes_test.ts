@@ -2,6 +2,7 @@
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
 import type { IngredientInfo } from "./macros.ts";
 import {
+  plausibleQuantity,
   buildPrompt, type Context, type ModelOutput, type ModelRecipe, needsFallback, outIngredients, type PantryRow,
   type RecipeRequest, runPipeline, usesExpiring, validateRecipe,
 } from "./recipes.ts";
@@ -208,4 +209,25 @@ Deno.test("pipeline: at most 3 recipes returned", async () => {
   const c = calls(out([GOOD, GOOD, GOOD, GOOD]));
   const r = await runPipeline(ctx(), c.primary, c.fallback);
   assert(r.ok && r.recipes.length === 3);
+});
+
+Deno.test("placeholder amounts count as 'some'", () => {
+  assertEquals(plausibleQuantity(1, "g"), null, "1 g pasta");
+  assertEquals(plausibleQuantity(1, "ml"), null, "1 ml almond milk");
+  assertEquals(plausibleQuantity(9, "grams"), null);
+  assertEquals(plausibleQuantity(10, "g"), 10);
+  assertEquals(plausibleQuantity(1, "kg"), 1);
+  assertEquals(plausibleQuantity(1, "each"), 1);
+  assertEquals(plausibleQuantity(0, "each"), null);
+  assertEquals(plausibleQuantity(null, "g"), null);
+});
+
+Deno.test("pipeline: no fallback once the time budget is used up", async () => {
+  let t = 0;
+  const c = calls(out([BAD, BAD, BAD]), out([GOOD]));
+  const slow = () => { t += 40_000; return c.primary(); };
+  const r = await runPipeline(ctx(), slow, c.fallback, { fallbackCutoffMs: 35_000, now: () => t });
+  assertEquals(c.count(), 1, "fallback skipped");
+  assert(!r.ok && r.error === "validation_failed");
+  assertEquals(r.attempts[1].reasons, ["skipped: out of time"]);
 });

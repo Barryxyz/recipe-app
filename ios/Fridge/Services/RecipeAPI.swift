@@ -100,13 +100,16 @@ enum RecipeAPI {
         return w.usage
     }
 
+    /// The server gives up on its fallback after 35 s, so a normal answer arrives well within this.
+    static let timeout: TimeInterval = 90
+
     static func generate(_ request: RecipeRequest) async throws -> Response {
         do {
             return try await supabase.functions.invoke(
                 "generate-recipes",
-                options: FunctionInvokeOptions(body: request, timeoutInterval: 120), decoder: ScanAPI.decoder)
+                options: FunctionInvokeOptions(body: request, timeoutInterval: timeout), decoder: ScanAPI.decoder)
         } catch let error as URLError {
-            if error.code == .cancelled { throw CancellationError() }
+            if error.code == .cancelled && Task.isCancelled { throw CancellationError() }
             throw error.code == .timedOut ? RecipeError.failed("timeout") : RecipeError.offline
         } catch FunctionsError.httpError(let code, let data) {
             throw map(code: code, data: data)
