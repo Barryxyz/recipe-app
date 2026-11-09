@@ -105,6 +105,15 @@ Deno.test("coverage and estimated flags", () => {
     { ingredient_id: 67, name: "white rice", quantity: 100, unit: "g" },
   ], 1, CATALOG);
   assertEquals(uncountable.total.estimated, true);
+  // A small guessed amount (a clove of garlic by gram hint) doesn't make the recipe "≈"...
+  const clove = computeMacros([
+    { ingredient_id: 52, name: "chicken breast", quantity: 500, unit: "g" },
+    { ingredient_id: 52, name: "garlic", quantity: 1, unit: "clove", grams: 5 },
+  ], 1, CATALOG);
+  assertEquals(clove.total.estimated, false);
+  // ...but a large one does (2 chicken breasts by gram hint: all of the weight).
+  const hinted = computeMacros([{ ingredient_id: 52, name: "chicken breast", quantity: 2, unit: "each", grams: 340 }], 1, CATALOG);
+  assertEquals([hinted.total.estimated, Math.round(hinted.total.kcal)], [true, 408]);
   // AI-estimated nutrients -> estimated.
   const custom = new Map(CATALOG).set(1_000_000_000_001, info(RICE, { estimated: true }));
   assertEquals(computeMacros([{ ingredient_id: 1_000_000_000_001, name: "x", quantity: 100, unit: "g" }], 1, custom)

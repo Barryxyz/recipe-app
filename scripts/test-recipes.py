@@ -156,7 +156,7 @@ try:
         return out
 
     # 2. Five normal requests: no allergens etc. in any recipe
-    total, times, bad, fallbacks = 0, [], [], 0
+    total, times, bad, fallbacks, est_units = 0, [], [], 0, set()
     for i, cuisine in enumerate([None, "italian", "mexican", "indian", None]):
         code, body, secs, req = generate(cuisine=cuisine, max_minutes=[45, 30, None, 60, 30][i])
         times.append(secs)
@@ -166,6 +166,9 @@ try:
         fallbacks += sum(1 for a in body["attempts"][1:])
         for rec in body["recipes"]:
             total += 1
+            if rec["macros_per_serving"]["estimated"]:
+                est_units |= {f"{i['quantity']} {i['unit']} {i['name']} ({i['kind']})" for i in rec["ingredients"]
+                              if i["unit"] not in ("g", "kg", "ml", "l", "oz", "lb") and not i["is_optional"]}
             for p in problems(rec, req):
                 bad.append(f"{rec['title']}: {p}")
         print(f"        {len(body['recipes'])} recipes in {secs:.1f}s ({body['attempts'][-1]['model']})"
@@ -175,6 +178,7 @@ try:
                         f"{', ≈' if r['macros_per_serving']['estimated'] else ''}"
                         f"{', uses ' + ', '.join(r['uses_expiring']) if r['uses_expiring'] else ''}]"
                         for r in body["recipes"]))
+    print(f"        estimated (≈) macros come from: {sorted(est_units)[:15]}")
     check(not bad and total >= 5, f"{total} recipes from 5 requests: no allergens, real pantry refs, no expired item, "
                                   f"amounts on hand, times, steps, macros" + ("" if not bad else f" -> {bad[:5]}"))
     check(fallbacks <= 1, f"fallback used {fallbacks} time(s) in 5 requests")

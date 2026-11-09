@@ -7,7 +7,7 @@ export type NutrientKey = typeof NUTRIENT_KEYS[number];
 export type Nutrients = Record<NutrientKey, number>;
 
 export interface Macros extends Nutrients {
-  /** Some grams or nutrients were guessed, or coverage < 0.9: show "≈". */
+  /** Over 10% of the weight is guessed, coverage < 0.9, or an ingredient couldn't be counted: show "≈". */
   estimated: boolean;
   /** Share of the counted weight that has nutrition data (0–1). */
   coverage: number;
@@ -107,6 +107,8 @@ export function computeMacros(
   const total = zero();
   let countedGrams = 0;
   let coveredGrams = 0;
+  /** Grams whose weight or nutrition was guessed (gram hint, water density, AI estimate). */
+  let guessedGrams = 0;
   let estimated = false;
 
   for (const ing of ingredients) {
@@ -117,16 +119,16 @@ export function computeMacros(
       estimated = true;            // can't be counted at all
       continue;
     }
-    if (guessed) estimated = true;
     countedGrams += grams;
+    if (guessed || data?.estimated) guessedGrams += grams;
     if (!data?.nutrients) continue; // weight known, nutrition unknown: lowers coverage
-    if (data.estimated) estimated = true;
     coveredGrams += grams;
     for (const k of NUTRIENT_KEYS) total[k] += (grams / 100) * (data.nutrients[k] ?? 0);
   }
 
   const coverage = countedGrams > 0 ? coveredGrams / countedGrams : (estimated ? 0 : 1);
-  if (coverage < 0.9) estimated = true;
+  // "≈" when more than 10% of the weight is unknown or guessed; a clove of garlic doesn't count.
+  if (coverage < 0.9 || (countedGrams > 0 && guessedGrams / countedGrams > 0.1)) estimated = true;
   const n = servings && servings > 0 ? servings : 1;
   const per = zero();
   for (const k of NUTRIENT_KEYS) per[k] = total[k] / n;

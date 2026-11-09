@@ -101,8 +101,9 @@ Hard rules (a recipe that breaks one is thrown away):
 
 Quality rules:
 - Only combine ingredients that genuinely go well together. A recipe does not need to use every pantry item.
-- Return up to 3 recipes that differ from each other (not three stir-fries). Return fewer, or none, rather than a strange or forced recipe.
-- If the pantry or the options limit what you can make, explain briefly in "note" (one or two sentences, addressed to the user) and list the limiting options in "limited_by". Otherwise note is null and limited_by is empty.
+- Aim for 3 recipes that differ from each other (not three stir-fries). Only when the pantry and options can't support 3 good ones, return fewer, or none, rather than a strange or forced recipe.
+- "note": null when you return 3 good recipes. Otherwise one short sentence, addressed to the user, about what they could change to get more or better recipes (e.g. a time limit, "only use what I have", a pantry without a main ingredient). Never mention their allergies or diets, or which items you left out because of them: they already know.
+- "limited_by": the options or the pantry that limited you, only when note is set; otherwise empty.
 - Don't calculate nutrition.`;
 
 function amount(r: PantryRow): string {
