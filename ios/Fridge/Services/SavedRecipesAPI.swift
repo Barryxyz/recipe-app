@@ -19,6 +19,16 @@ enum SavedRecipesAPI {
             .value
     }
 
+    /// Ids of recipes that are still saved (not deleted).
+    static func activeIds(among ids: [UUID]) async throws -> Set<UUID> {
+        guard !ids.isEmpty else { return [] }
+        struct Row: Decodable { let id: UUID }
+        let rows: [Row] = try await app.from("recipes").select("id")
+            .in("id", values: ids.map(\.uuidString)).is("deleted_at", value: nil)
+            .execute().value
+        return Set(rows.map(\.id))
+    }
+
     /// Saves a generated recipe with its ingredients in one transaction; returns the new id.
     static func save(_ recipe: RecipeAPI.Recipe) async throws -> UUID {
         struct Params: Encodable { let recipe: RecipeAPI.Recipe }

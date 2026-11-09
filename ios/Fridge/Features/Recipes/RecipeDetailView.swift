@@ -4,9 +4,10 @@ import SwiftUI
 /// from, and the screen stays on while it's open.
 struct RecipeDetailView: View {
     let recipe: RecipeAPI.Recipe
-    /// Generated recipes: Save (F3.1). Nil for recipes that are already saved.
+    /// Save / unsave (F3.1). Nil hides the button.
     var initiallySaved = false
     var onSave: (() async throws -> Void)? = nil
+    var onUnsave: (() async throws -> Void)? = nil
 
     @State private var showTotal = false
     @State private var saved: Bool?
@@ -68,26 +69,34 @@ struct RecipeDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if let onSave {
+            if let onSave, let onUnsave {
                 ToolbarItem(placement: .primaryAction) {
-                    if saved ?? initiallySaved {
-                        Label("Saved", systemImage: "checkmark").labelStyle(.titleAndIcon).foregroundStyle(.secondary)
-                    } else {
-                        Button {
-                            Task {
-                                saving = true
-                                defer { saving = false }
-                                do { try await onSave(); saved = true } catch { saveError = error.localizedDescription }
+                    let isSaved = saved ?? initiallySaved
+                    Button {
+                        Task {
+                            saving = true
+                            defer { saving = false }
+                            do {
+                                if isSaved { try await onUnsave() } else { try await onSave() }
+                                saved = !isSaved
+                            } catch {
+                                saveError = error.localizedDescription
                             }
-                        } label: {
-                            if saving { ProgressView() } else { Label("Save", systemImage: "bookmark").labelStyle(.titleAndIcon) }
                         }
-                        .disabled(saving)
+                    } label: {
+                        if saving {
+                            ProgressView()
+                        } else {
+                            Label(isSaved ? "Saved" : "Save", systemImage: isSaved ? "bookmark.fill" : "bookmark")
+                                .labelStyle(.titleAndIcon)
+                        }
                     }
+                    .disabled(saving)
+                    .accessibilityHint(isSaved ? "Removes it from your saved recipes" : "Adds it to your saved recipes")
                 }
             }
         }
-        .alert("Couldn't save", isPresented: .constant(saveError != nil)) {
+        .alert("Something went wrong", isPresented: .constant(saveError != nil)) {
             Button("OK") { saveError = nil }
         } message: { Text(saveError ?? "") }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }

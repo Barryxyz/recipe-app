@@ -50,11 +50,19 @@ struct RecipesView: View {
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Recipes")
-            .navigationDestination(for: SavedRecipe.self) { r in RecipeDetailView(recipe: r.asRecipe(pantry: pantry)) }
+            .navigationDestination(for: SavedRecipe.self) { r in
+                // Unsave here = delete; Save again restores the same recipe.
+                RecipeDetailView(recipe: r.asRecipe(pantry: pantry), initiallySaved: true,
+                                 onSave: { try await SavedRecipesAPI.setDeleted(r.id, false) },
+                                 onUnsave: { try await SavedRecipesAPI.setDeleted(r.id, true) })
+            }
             .modifier(SearchIfNeeded(enabled: !saved.isEmpty, text: $search))
             .refreshable { await loadSaved() }
-            .task { await loadSaved() }
-            .onAppear { lastSession = RecipeSession.load() }
+            .onAppear {
+                // Also runs when coming back from a recipe, so unsaved ones disappear.
+                lastSession = RecipeSession.load()
+                Task { await loadSaved() }
+            }
             .overlay(alignment: .bottom) { undoToast }
             .sheet(item: $sheet) { input in
                 RecipeOptionsView(pantry: input.pantry, options: input.options, excluded: input.excluded,

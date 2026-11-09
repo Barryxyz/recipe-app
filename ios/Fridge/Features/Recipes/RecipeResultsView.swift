@@ -36,13 +36,19 @@ struct RecipeResultsView: View {
                 }
                 .navigationDestination(for: RecipeAPI.Recipe.self) { recipe in
                     RecipeDetailView(recipe: recipe, initiallySaved: savedId(recipe) != nil,
-                                     onSave: { try await save(recipe) })
+                                     onSave: { try await save(recipe) },
+                                     onUnsave: { try await unsave(recipe) })
                 }
         }
         .onAppear {
             guard current == nil else { return }
             current = request
-            if let initial { phase = .results(initial) } else { run(request) }
+            if let initial {
+                phase = .results(initial)
+                Task { await reconcileSaved() }
+            } else {
+                run(request)
+            }
         }
         .confirmationDialog("Replace these recipes?", isPresented: $confirmRegenerate, titleVisibility: .visible) {
             Button("Regenerate") { run(current ?? request) }
@@ -77,6 +83,25 @@ struct RecipeResultsView: View {
     }
 
     private func savedId(_ r: RecipeAPI.Recipe) -> UUID? { session?.savedIds?[r.temp_id] }
+
+    private func unsave(_ r: RecipeAPI.Recipe) async throws {
+        guard let id = savedId(r), var s = session else { return }
+        try await SavedRecipesAPI.setDeleted(id, true)
+        s.savedIds?[r.temp_id] = nil
+        s.save()
+        phase = .results(s)
+    }
+
+    /// Recipes saved from these results may have been deleted since (Recipes tab): forget those.
+    private func reconcileSaved() async {
+        guard var s = session, let ids = s.savedIds, !ids.isEmpty,
+              let active = try? await SavedRecipesAPI.activeIds(among: Array(ids.values)) else { return }
+        let kept = ids.filter { active.contains($0.value) }
+        guard kept.count != ids.count else { return }
+        s.savedIds = kept
+        s.save()
+        if case .results = phase { phase = .results(s) }
+    }
 
     private func save(_ r: RecipeAPI.Recipe) async throws {
         guard savedId(r) == nil else { return }       // never saved twice
