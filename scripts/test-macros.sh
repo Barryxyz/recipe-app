@@ -30,7 +30,7 @@ USER_ID=$(curl -s "$URL/auth/v1/user" -H "apikey: $KEY" -H "Authorization: Beare
 H=(-H "apikey: $KEY" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json')
 rest() { # rest METHOD path [json]
   curl -s -X "$1" "$URL/rest/v1/$2" "${H[@]}" -H 'Content-Profile: app' -H 'Accept-Profile: app' \
-    -H 'Prefer: return=representation' ${3:+-d "$3"}; }
+    -H 'Prefer: return=representation,missing=default' ${3:+-d "$3"}; }
 recompute() { curl -s -o "$TMP" -w '%{http_code}' -X POST "$FN" "${H[@]}" -d "{\"recipe_id\":\"$1\"}"; }
 estimates() { sql "select count(*) from app.ai_usage_log where user_id = '$USER_ID' and kind = 'estimate'"; }
 cleanup() {
@@ -46,7 +46,7 @@ echo "Macros tests (test user ${USER_ID:0:8}…)"
 # nutrition yet + "Basmati Rice" as free text (optional, so not counted). Serves 2.
 CUSTOM=$(rest POST ingredients_private '{"name":"gochujang"}' | json 'd[0]["id"]')
 RECIPE=$(rest POST recipes '{"title":"Macro test","servings":2,"source":"manual"}' | json 'd[0]["id"]')
-rest POST recipe_ingredients "[
+rest POST "recipe_ingredients?columns=recipe_id,position,ingredient_id,name,quantity,unit,is_optional" "[
   {\"recipe_id\":\"$RECIPE\",\"position\":0,\"ingredient_id\":52,\"name\":\"chicken breast\",\"quantity\":200,\"unit\":\"g\"},
   {\"recipe_id\":\"$RECIPE\",\"position\":1,\"ingredient_id\":67,\"name\":\"white rice\",\"quantity\":100,\"unit\":\"g\"},
   {\"recipe_id\":\"$RECIPE\",\"position\":2,\"ingredient_id\":$CUSTOM,\"name\":\"gochujang\",\"quantity\":2,\"unit\":\"tbsp\"},
@@ -68,7 +68,7 @@ stored=$(sql "select (macros_total->>'kcal')::numeric from app.recipes where id 
 est=$(estimates)
 saved=$(sql "select nutrients_per_100g is not null from app.ingredients_private where id = $CUSTOM")
 base=$(python3 -I -c "print(605 + 0)")  # chicken 240 + rice 365, before the custom item
-if [ "$code" = 200 ] && [ "$est" = 1 ] && [ "$saved" = true ] && python3 -I -c "
+if [ "$code" = 200 ] && [ "$est" = 1 ] && [ "$saved" = True ] && python3 -I -c "
 k=float('$kcal1'); s=float('$stored'); assert abs(k-s) < 0.01 and $base < k < $base + 300" 2>/dev/null; then
   pass "first recompute -> 1 estimate call, saved (total $(printf '%.0f' "$kcal1") kcal, $(json 'd["macros_total"]["estimated"]' < "$TMP"))"
 else
