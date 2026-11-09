@@ -38,8 +38,6 @@ struct RecipesView: View {
     var body: some View {
         NavigationStack {
             List {
-                savedSection
-
                 Section {
                     ideasCard
                     if let lastSession, !lastSession.response.recipes.isEmpty { lastIdeasCard(lastSession) }
@@ -47,8 +45,11 @@ struct RecipesView: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+
+                savedSection
             }
             .listStyle(.insetGrouped)
+            .scrollDismissesKeyboard(.immediately)
             .navigationTitle("Recipes")
             .navigationDestination(for: SavedRecipe.self) { r in
                 // Unsave here = delete; Save again restores the same recipe.
@@ -56,7 +57,6 @@ struct RecipesView: View {
                                  onSave: { try await SavedRecipesAPI.setDeleted(r.id, false) },
                                  onUnsave: { try await SavedRecipesAPI.setDeleted(r.id, true) })
             }
-            .modifier(SearchIfNeeded(enabled: !saved.isEmpty, text: $search))
             .refreshable { await loadSaved() }
             .onAppear {
                 // Also runs when coming back from a recipe, so unsaved ones disappear.
@@ -121,6 +121,7 @@ struct RecipesView: View {
             }
         } else {
             Section {
+                searchField
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(SavedRecipeFilter.allCases) { f in
@@ -156,6 +157,25 @@ struct RecipesView: View {
                 Text("Saved recipes (\(saved.count))")
             }
         }
+    }
+
+    /// In the list (below the ideas cards) rather than pinned under the title.
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("Search saved recipes", text: $search)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+            if !search.isEmpty {
+                Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+        .listRowSeparator(.hidden)
     }
 
     private func savedRow(_ r: SavedRecipe) -> some View {
@@ -302,15 +322,6 @@ struct RecipesView: View {
         } catch {
             loadError = error.localizedDescription
         }
-    }
-}
-
-/// Search only once there's something to search.
-private struct SearchIfNeeded: ViewModifier {
-    let enabled: Bool
-    @Binding var text: String
-    func body(content: Content) -> some View {
-        if enabled { content.searchable(text: $text, prompt: "Search saved recipes") } else { content }
     }
 }
 
