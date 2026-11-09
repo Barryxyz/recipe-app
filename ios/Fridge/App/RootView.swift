@@ -22,13 +22,18 @@ struct RootView: View {
     }
 }
 
-/// Signed in: the pantry, with onboarding (F1.7) on top the first time.
+/// Signed in: Pantry and Recipes tabs, with onboarding (F1.7) on top the first time.
 private struct ReadyView: View {
     let user: AppUser
     @State private var showOnboarding = false
 
     var body: some View {
-        PantryListView(user: user)
+        TabView {
+            PantryListView(user: user)
+                .tabItem { Label("Pantry", systemImage: "refrigerator") }
+            RecipesView(user: user)
+                .tabItem { Label("Recipes", systemImage: "fork.knife") }
+        }
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
             }
