@@ -50,13 +50,19 @@ export function purchaseRequired(): boolean {
   return env("REQUIRE_PURCHASE")?.toLowerCase() !== "false";
 }
 
+function positiveInt(name: string, fallback: number): number {
+  const v = Number(env(name));
+  return Number.isInteger(v) && v > 0 ? v : fallback;
+}
+
 /** NFR-9: successful scans allowed per user per local day / month. */
 export function scanLimits(): { daily: number; monthly: number } {
-  const n = (name: string, fallback: number) => {
-    const v = Number(env(name));
-    return Number.isInteger(v) && v > 0 ? v : fallback;
-  };
-  return { daily: n("SCAN_DAILY_LIMIT", 10), monthly: n("SCAN_MONTHLY_LIMIT", 60) };
+  return { daily: positiveInt("SCAN_DAILY_LIMIT", 10), monthly: positiveInt("SCAN_MONTHLY_LIMIT", 60) };
+}
+
+/** F2.2: recipe requests allowed per user per local day / month. */
+export function recipeLimits(): { daily: number; monthly: number } {
+  return { daily: positiveInt("RECIPE_DAILY_LIMIT", 20), monthly: positiveInt("RECIPE_MONTHLY_LIMIT", 300) };
 }
 
 export function anthropicApiKey(): string {

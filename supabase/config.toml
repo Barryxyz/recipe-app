@@ -441,3 +441,10 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/recompute-macros/deno.json"
 entrypoint = "./functions/recompute-macros/index.ts"
+
+
+[functions.generate-recipes]
+enabled = true
+verify_jwt = false
+import_map = "./functions/generate-recipes/deno.json"
+entrypoint = "./functions/generate-recipes/index.ts"
