@@ -49,9 +49,11 @@ struct IngredientChoice: Codable, Identifiable, Equatable, Hashable {
     let category: String?
     let defaultUnit: String?
     let isCustom: Bool
+    /// How well it matched a search (app.search_ingredients), 0–1.
+    var score: Double? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, name, category
+        case id, name, category, score
         case defaultUnit = "default_unit"
         case isCustom = "is_custom"
     }

@@ -1,8 +1,8 @@
 import Foundation
 
 /// F3.2: the recipe editor's state and rules (no UI, no network). Also the start of F3.7.
-struct RecipeEditDraft: Equatable {
-    struct Ingredient: Equatable, Identifiable {
+struct RecipeEditDraft: Equatable, Codable {
+    struct Ingredient: Equatable, Identifiable, Codable {
         var id = UUID()
         var ingredientId: Int64?
         var name: String
@@ -14,7 +14,7 @@ struct RecipeEditDraft: Equatable {
         var isOptional: Bool
     }
 
-    struct Step: Equatable, Identifiable {
+    struct Step: Equatable, Identifiable, Codable {
         var id = UUID()
         var text: String
     }
@@ -48,6 +48,44 @@ struct RecipeEditDraft: Equatable {
                            grams: $0.grams, note: $0.note ?? "", isOptional: $0.is_optional)
             },
             steps: r.steps.map { Step(text: RecipeText.stepWithoutNumber($0)) })
+    }
+
+    // MARK: Creating (F3.7)
+
+    /// Anything typed? (An untouched new recipe can be left without asking.)
+    var hasContent: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !ingredients.isEmpty || steps.contains { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }
+            || prepMin != nil || cookMin != nil
+    }
+
+    /// Duplicate: a filled-in copy with fresh row ids, named "… (copy)".
+    func duplicated() -> RecipeEditDraft {
+        var d = self
+        let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        d.title = String((t.count + 7 > Self.maxTitle ? String(t.prefix(Self.maxTitle - 7)) : t) + " (copy)")
+        d.ingredients = ingredients.map { var i = $0; i.id = UUID(); return i }
+        d.steps = steps.map { Step(text: $0.text) }
+        return d
+    }
+
+    /// A copy of the user's own recipe stays theirs; a copy of an AI or shared recipe is "edited".
+    static func duplicateSource(of source: String) -> String {
+        source == "manual" ? "manual" : "edited"
+    }
+
+    /// Pasted lines as ingredient rows (linking to the catalog happens later, see RecipeCreator).
+    mutating func appendPasted(_ lines: [RecipePaste.ParsedIngredient]) {
+        ingredients += lines.map {
+            Ingredient(ingredientId: nil, name: $0.name, quantity: $0.quantity, unit: $0.unit, grams: nil,
+                       note: $0.note, isOptional: false)
+        }
+    }
+
+    mutating func appendPasted(steps pasted: [String]) {
+        steps.removeAll { $0.text.trimmingCharacters(in: .whitespaces).isEmpty }
+        steps += pasted.map { Step(text: $0) }
     }
 
     // MARK: Validation (shown inline)

@@ -11,6 +11,10 @@ struct RecipeDetailView: View {
     /// Saved recipes: Edit (F3.2) and the state of the nutrition recalculation.
     var onEdit: (() -> Void)? = nil
     var macroStatus: MacroStatus? = nil
+    /// The user's own recipes (F3.7) have no AI disclaimer.
+    var isAIRecipe = true
+    /// Blank prep / cook times show "—" (F3.7).
+    var timesKnown: (prep: Bool, cook: Bool) = (true, true)
 
     enum MacroStatus {
         case updating
@@ -30,8 +34,8 @@ struct RecipeDetailView: View {
                     Text(recipe.description).foregroundStyle(.secondary)
                     HStack(spacing: 0) {
                         info("person.2", "\(recipe.servings) serving\(recipe.servings == 1 ? "" : "s")")
-                        info("knife", "Prep \(MacroFormat.minutes(recipe.prep_min))")
-                        info("frying.pan", "Cook \(MacroFormat.minutes(recipe.cook_min))")
+                        info("knife", "Prep \(timesKnown.prep ? MacroFormat.minutes(recipe.prep_min) : "—")")
+                        info("frying.pan", "Cook \(timesKnown.cook ? MacroFormat.minutes(recipe.cook_min) : "—")")
                     }
                     .font(.footnote).foregroundStyle(.secondary)
                 }
@@ -75,7 +79,7 @@ struct RecipeDetailView: View {
                 }
             }
 
-            Section {
+            if isAIRecipe { Section {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("AI-generated. Check that meat, poultry, fish and eggs reach safe temperatures.",
                           systemImage: "exclamationmark.shield")
@@ -83,7 +87,7 @@ struct RecipeDetailView: View {
                           systemImage: "allergens")
                 }
                 .font(.footnote).foregroundStyle(.secondary)
-            }
+            } }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -21,6 +21,9 @@ struct RecipesView: View {
     @State private var filters: Set<SavedRecipeFilter> = []
     @State private var deleted: SavedRecipe?
     @State private var actionError: String?
+    @State private var path: [SavedRecipe] = []
+    @State private var newRecipe: RecipeEditDraft?
+    @State private var justCreated: Set<UUID> = []
 
     struct SheetInput: Identifiable {
         let id = UUID()
@@ -36,7 +39,7 @@ struct RecipesView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 Section {
                     ideasCard
@@ -51,7 +54,23 @@ struct RecipesView: View {
             .listStyle(.insetGrouped)
             .scrollDismissesKeyboard(.immediately)
             .navigationTitle("Recipes")
-            .navigationDestination(for: SavedRecipe.self) { r in SavedRecipeDetailView(recipe: r, pantry: pantry) }
+            .navigationDestination(for: SavedRecipe.self) { r in
+                SavedRecipeDetailView(recipe: r, pantry: pantry, recomputeOnAppear: justCreated.contains(r.id))
+            }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button { Task { await startNewRecipe() } } label: { Label("New recipe", systemImage: "square.and.pencil") }
+                    } label: {
+                        Image(systemName: "plus").accessibilityLabel("Add a recipe")
+                    }
+                }
+            }
+            .fullScreenCover(item: Binding(get: { newRecipe.map(NewRecipeInput.init) }, set: { if $0 == nil { newRecipe = nil } })) { input in
+                RecipeEditorView(navTitle: "New recipe", draft: input.draft, isNew: true, keepsDraft: true,
+                                 onSave: { draft in try await createRecipe(draft) },
+                                 onCancel: { newRecipe = nil })
+            }
             .refreshable { await loadSaved() }
             .onAppear {
                 // Also runs when coming back from a recipe, so unsaved ones disappear.
@@ -111,8 +130,14 @@ struct RecipesView: View {
             Section { ProgressView().frame(maxWidth: .infinity) }
         } else if saved.isEmpty {
             Section {
-                ContentUnavailableView("No saved recipes yet", systemImage: "book.closed",
-                                       description: Text("Tap Save on a recipe idea to keep it here."))
+                ContentUnavailableView {
+                    Label("No saved recipes yet", systemImage: "book.closed")
+                } description: {
+                    Text("Save a recipe idea, or write down one of your own.")
+                } actions: {
+                    Button { Task { await startNewRecipe() } } label: { Label("Write your own", systemImage: "square.and.pencil") }
+                        .buttonStyle(.bordered)
+                }
             }
         } else {
             Section {
@@ -206,6 +231,36 @@ struct RecipesView: View {
             .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+    }
+
+    // MARK: Write your own (F3.7)
+
+    struct NewRecipeInput: Identifiable {
+        let draft: RecipeEditDraft
+        var id: Int { 0 }
+    }
+
+    /// Opens the kept draft, or an empty recipe for the user's default number of servings.
+    private func startNewRecipe() async {
+        if let kept = RecipeCreator.loadDraft() { newRecipe = kept; return }
+        let servings = await RecipeCreator.prefs()?.defaultServings ?? 2
+        newRecipe = RecipeEditDraft(servings: min(max(servings, RecipeEditDraft.servingsRange.lowerBound),
+                                                  RecipeEditDraft.servingsRange.upperBound))
+    }
+
+    /// Saves, forgets the draft and opens the new recipe, which then calculates its nutrition.
+    private func createRecipe(_ draft: RecipeEditDraft) async throws {
+        let id = try await RecipeCreator.save(draft, source: "manual")
+        RecipeCreator.discardDraft()
+        newRecipe = nil
+        await loadSaved()
+        var found = saved.first { $0.id == id }
+        if found == nil { found = try? await SavedRecipesAPI.get(id) }
+        if let r = found {
+            justCreated.insert(id)
+            try? await Task.sleep(for: .milliseconds(350))
+            path.append(r)
+        }
     }
 
     private func loadSaved() async {
