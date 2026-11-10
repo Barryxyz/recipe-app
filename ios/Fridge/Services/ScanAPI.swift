@@ -103,6 +103,7 @@ enum ScanAPI {
             .rpc("add_pantry_items", params: Params(items: review.saveItems))
             .execute()
             .value
+        await ExpiryReminders.shared.pantrySaved()
         return (r.added, r.updated)
     }
 

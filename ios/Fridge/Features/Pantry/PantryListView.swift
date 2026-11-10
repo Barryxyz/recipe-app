@@ -49,6 +49,13 @@ struct PantryListView: View {
                 .searchable(text: $search, prompt: "Search your pantry")
                 .refreshable { await load() }
                 .task { await load() }
+                // A tapped expiry reminder (F5.1): All, with Use these first open.
+                .onChange(of: ExpiryReminders.shared.openPantryRequest) { _, _ in
+                    search = ""
+                    tab = .all
+                    useFirstExpanded = true
+                    Task { await load() }
+                }
                 .sheet(isPresented: $showAdd) { ItemFormView(mode: .add) { Task { await load() } } }
                 .sheet(item: $editing) { item in ItemFormView(mode: .edit(item)) { Task { await load() } } }
                 .sheet(isPresented: $showSettings) { SettingsView(user: user) }

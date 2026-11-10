@@ -16,6 +16,8 @@ struct SettingsView: View {
                         Label("Expiry defaults", systemImage: "calendar.badge.clock")
                     }
                 }
+                ExpiryRemindersSection()
+
                 Section("About") {
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
                     LabeledContent("Account", value: "Anonymous")
@@ -139,5 +141,49 @@ struct ExpiryDefaultsView: View {
             self.error = error.localizedDescription
             await load()
         }
+    }
+}
+
+/// Settings → Expiry reminders (F5.1): on/off, time, how early, and a test.
+struct ExpiryRemindersSection: View {
+    @Bindable private var reminders = ExpiryReminders.shared
+    @State private var blocked = false
+    @State private var testMessage: String?
+
+    var body: some View {
+        Section {
+            Toggle("Daily reminder", isOn: Binding(get: { reminders.enabled }, set: { on in
+                if on { Task { blocked = !(await reminders.turnOn()) } } else { reminders.enabled = false }
+            }))
+            if blocked {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Notifications are off for Fridge in iOS Settings.").font(.footnote).foregroundStyle(.secondary)
+                    Button("Open iOS Settings") {
+                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
+                    }
+                    .font(.footnote.weight(.semibold))
+                }
+            }
+            if reminders.enabled {
+                DatePicker("Time", selection: $reminders.time, displayedComponents: .hourAndMinute)
+                Picker("Warn me", selection: $reminders.leadDays) {
+                    Text("1 day before").tag(1)
+                    Text("2 days before").tag(2)
+                    Text("3 days before").tag(3)
+                }
+                Button("Send a test reminder") {
+                    Task {
+                        testMessage = await reminders.sendTest()
+                            ?? "Sent: it appears in about 5 seconds. Lock the phone or go to the Home Screen to see it there."
+                    }
+                }
+                if let testMessage { Text(testMessage).font(.footnote).foregroundStyle(.secondary) }
+            }
+        } header: {
+            Text("Expiry reminders")
+        } footer: {
+            Text("At most one a day, listing what's about to expire. Seasonings & staples aren't included.")
+        }
+        .task { if reminders.enabled { blocked = !(await reminders.systemAllows()) } }
     }
 }

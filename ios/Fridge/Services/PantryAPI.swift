@@ -10,8 +10,9 @@ enum PantryAPI {
     // MARK: Pantry items
 
     /// Active items, soonest expiry first, no-expiry last.
+    /// Every fresh read also reschedules the expiry reminders (F5.1).
     static func activeItems() async throws -> [PantryItem] {
-        try await app.from("pantry_items")
+        let items: [PantryItem] = try await app.from("pantry_items")
             .select(PantryItem.columns)
             .eq("status", value: PantryItem.Status.active.rawValue)
             .is("deleted_at", value: nil)
@@ -19,6 +20,8 @@ enum PantryAPI {
             .order("display_name")
             .execute()
             .value
+        await ExpiryReminders.shared.update(with: items)
+        return items
     }
 
     /// Adds an item. The expiry date comes from the server (F1.6) unless the user set one.
@@ -30,12 +33,14 @@ enum PantryAPI {
             expiryOverridden: draft.expiryOverridden,
             expiresAt: draft.expiryOverridden ? .some(draft.chosenExpiry) : nil,
             source: .manual, isStaple: draft.isStaple)
-        return try await app.from("pantry_items")
+        let item: PantryItem = try await app.from("pantry_items")
             .insert(row, returning: .representation)
             .select(PantryItem.columns)
             .single()
             .execute()
             .value
+        await ExpiryReminders.shared.pantrySaved()
+        return item
     }
 
     /// Saves edits. When the date isn't the user's own, it's left out so the server
@@ -48,13 +53,15 @@ enum PantryAPI {
             expiryOverridden: draft.expiryOverridden,
             expiresAt: draft.expiryOverridden ? .some(draft.chosenExpiry) : nil,
             source: nil, isStaple: draft.isStaple)
-        return try await app.from("pantry_items")
+        let item: PantryItem = try await app.from("pantry_items")
             .update(row)
             .eq("id", value: id)
             .select(PantryItem.columns)
             .single()
             .execute()
             .value
+        await ExpiryReminders.shared.pantryChanged()
+        return item
     }
 
     static func setStatus(_ id: UUID, _ status: PantryItem.Status) async throws {
@@ -68,6 +75,7 @@ enum PantryAPI {
             .update(["status": status.rawValue])
             .in("id", values: ids.map(\.uuidString))
             .execute()
+        await ExpiryReminders.shared.pantryChanged()
     }
 
     /// Soft delete (DESIGN §5): hidden everywhere, kept so offline sync can learn about it (F3.6).
@@ -76,6 +84,7 @@ enum PantryAPI {
             .update(["deleted_at": ISO8601DateFormatter().string(from: .now)])
             .eq("id", value: id)
             .execute()
+        await ExpiryReminders.shared.pantryChanged()
     }
 
     /// Adds staples (onboarding), skipping ingredients the household already has as a staple.

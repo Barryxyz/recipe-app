@@ -34,6 +34,10 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.barryxyz.fridge.refresh
         NSCameraUsageDescription: Fridge uses the camera to photograph your fridge, freezer or pantry so it can list the food inside. Photos aren't stored.
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)

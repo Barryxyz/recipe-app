@@ -66,7 +66,9 @@ enum ShoppingAPI {
     /// Checked rows -> pantry items (one transaction); the rows are removed. Returns how many.
     static func moveToPantry(_ items: [Bought]) async throws -> Int {
         struct Params: Encodable { let items: [Bought] }
-        return try await app.rpc("move_bought_to_pantry", params: Params(items: items)).execute().value
+        let n: Int = try await app.rpc("move_bought_to_pantry", params: Params(items: items)).execute().value
+        await ExpiryReminders.shared.pantryChanged()
+        return n
     }
 
     /// Catalog categories, for the aisles and default pantry locations.

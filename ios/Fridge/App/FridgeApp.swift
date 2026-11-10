@@ -7,6 +7,12 @@ struct FridgeApp: App {
     private static let isRunningUnitTests =
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
+    init() {
+        // Become the notification delegate at launch, so tapping a reminder that started the
+        // app still opens the pantry (F5.1).
+        if !Self.isRunningUnitTests { _ = ExpiryReminders.shared }
+    }
+
     var body: some Scene {
         WindowGroup {
             if Self.isRunningUnitTests {
@@ -14,6 +20,10 @@ struct FridgeApp: App {
             } else {
                 RootView()
             }
+        }
+        // F5.1: about once a day, iOS wakes the app to rebuild the expiry reminders.
+        .backgroundTask(.appRefresh(ExpiryReminders.backgroundTaskId)) {
+            await BackgroundRefresh.run()
         }
     }
 }

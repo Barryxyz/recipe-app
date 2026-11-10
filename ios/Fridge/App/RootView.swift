@@ -28,6 +28,8 @@ private struct ReadyView: View {
     @State private var showOnboarding = false
 
     @State private var tab: AppTab = .pantry
+    @Environment(\.scenePhase) private var scenePhase
+    private var reminders = ExpiryReminders.shared
 
     init(user: AppUser) {
         self.user = user
@@ -51,6 +53,19 @@ private struct ReadyView: View {
                 .background(TabBarHeight(extra: AppTabBar.extraHeight))
         }
             .task { await ShoppingBadge.shared.refresh() }
+            // F5.1: rebuild reminders when the app comes back; a tapped reminder opens the pantry.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { reminders.pantryChanged() }
+                if phase == .background { BackgroundRefresh.schedule() }
+            }
+            .onChange(of: reminders.openPantryRequest) { _, _ in tab = .pantry }
+            .alert("Get a heads-up before food expires?", isPresented: Binding(
+                get: { reminders.offerPrompt }, set: { reminders.offerPrompt = $0 })) {
+                Button("Turn on") { Task { await reminders.turnOn() } }
+                Button("Not now", role: .cancel) {}
+            } message: {
+                Text("Fridge can send one reminder a day, at \(reminders.time.formatted(date: .omitted, time: .shortened)), listing what's about to expire. You can change this in Settings.")
+            }
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
             }

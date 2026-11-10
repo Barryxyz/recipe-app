@@ -14,12 +14,15 @@ enum CookedAPI {
 
     static func apply(_ changes: [CookedThis.Change]) async throws -> [Snapshot] {
         struct Params: Encodable { let changes: [CookedThis.Change] }
-        return try await app.rpc("apply_cooked", params: Params(changes: changes)).execute().value
+        let snapshot: [Snapshot] = try await app.rpc("apply_cooked", params: Params(changes: changes)).execute().value
+        await ExpiryReminders.shared.pantryChanged()
+        return snapshot
     }
 
     static func undo(_ snapshot: [Snapshot]) async throws {
         struct Params: Encodable { let snapshot: [Snapshot] }
         try await app.rpc("undo_cooked", params: Params(snapshot: snapshot)).execute()
+        await ExpiryReminders.shared.pantryChanged()
     }
 
     /// Catalog weights and densities for these ids (custom ingredients have none).
