@@ -25,6 +25,8 @@ struct RecipeDetailView: View {
     @State private var saved: Bool?
     @State private var saving = false
     @State private var saveError: String?
+    @State private var cooking = false
+    @State private var cookedUndo: [CookedAPI.Snapshot]?
 
     var body: some View {
         List {
@@ -79,6 +81,20 @@ struct RecipeDetailView: View {
                 }
             }
 
+            Section {
+                Button { cooking = true } label: {
+                    Label("Cooked this", systemImage: "checkmark.circle")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            } footer: {
+                Text("Takes what you used out of your pantry.")
+                    .frame(maxWidth: .infinity)
+            }
+
             if isAIRecipe { Section {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("AI-generated. Check that meat, poultry, fish and eggs reach safe temperatures.",
@@ -119,6 +135,35 @@ struct RecipeDetailView: View {
                     .disabled(saving)
                     .accessibilityHint(isSaved ? "Removes it from your saved recipes" : "Adds it to your saved recipes")
                 }
+            }
+        }
+        .sheet(isPresented: $cooking) {
+            CookedThisView(recipe: recipe) { snapshot in
+                withAnimation { cookedUndo = snapshot }
+                Task {
+                    try? await Task.sleep(for: .seconds(5))
+                    if cookedUndo == snapshot { withAnimation { cookedUndo = nil } }
+                }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let snapshot = cookedUndo {
+                HStack {
+                    Label("Pantry updated", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    Spacer()
+                    Button("Undo") {
+                        withAnimation { cookedUndo = nil }
+                        Task {
+                            do { try await CookedAPI.undo(snapshot) }
+                            catch { saveError = "Couldn't undo the pantry change." }
+                        }
+                    }
+                    .fontWeight(.semibold)
+                }
+                .padding()
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .padding()
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .alert("Something went wrong", isPresented: .constant(saveError != nil)) {
