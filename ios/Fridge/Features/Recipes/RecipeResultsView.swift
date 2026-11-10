@@ -87,6 +87,7 @@ struct RecipeResultsView: View {
     private func unsave(_ r: RecipeAPI.Recipe) async throws {
         guard let id = savedId(r), var s = session else { return }
         try await SavedRecipesAPI.setDeleted(id, true)
+        Events.log(.recipeDeleted, ["source": "ai", "via": "unsave"])
         s.savedIds?[r.temp_id] = nil
         s.save()
         phase = .results(s)
@@ -106,6 +107,7 @@ struct RecipeResultsView: View {
     private func save(_ r: RecipeAPI.Recipe) async throws {
         guard savedId(r) == nil else { return }       // never saved twice
         let id = try await SavedRecipesAPI.save(r)
+        Events.log(.recipeSaved, ["source": "ai"])
         guard var s = session else { return }
         s.savedIds = (s.savedIds ?? [:]).merging([r.temp_id: id]) { $1 }
         s.save()
@@ -122,6 +124,10 @@ struct RecipeResultsView: View {
         task = Task {
             do {
                 let response = try await RecipeAPI.generate(r)
+                Events.log(.recipesGenerated, ["count": .integer(response.recipes.count),
+                                               "fallback_used": .bool((response.attempts?.count ?? 1) > 1),
+                                               "latency_ms": .integer(Int(Date.now.timeIntervalSince(started) * 1000)),
+                                               "options": .object(r.eventProps)])
                 if Task.isCancelled { return }
                 let session = RecipeSession(request: r, response: response)
                 session.save()

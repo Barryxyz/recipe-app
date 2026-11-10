@@ -1,4 +1,5 @@
 import Foundation
+import Supabase
 
 /// F2.1: the options sheet before generating recipes. Pure state and rules (no UI, no network).
 
@@ -126,6 +127,14 @@ struct RecipeRequest: Codable, Equatable {
     var prefer_expiring: Bool
     var only_on_hand: Bool
     var exclude_pantry_item_ids: [UUID]
+
+    /// Options for the recipes_generated event (F5.2). A typed cuisine is "other", never the text.
+    var eventProps: [String: AnyJSON] {
+        ["servings": .integer(servings), "max_minutes": max_minutes.map { .integer($0) } ?? .null, "meal": .string(meal),
+         "cuisine": cuisine.map { Cuisine(rawValue: $0) != nil ? .string($0) : .string("other") } ?? .null,
+         "prefer_expiring": .bool(prefer_expiring), "only_on_hand": .bool(only_on_hand),
+         "excluded": .integer(exclude_pantry_item_ids.count)]
+    }
 
     init(options o: RecipeOptions, excluding: Set<UUID>) {
         servings = RecipeOptions.clampServings(o.servings)

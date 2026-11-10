@@ -13,6 +13,8 @@ struct ItemFormView: View {
     }
 
     let mode: Mode
+    /// Where the add sheet was opened from, for the manual_item_added event (F5.2).
+    var via = "pantry"
     /// Called after anything is saved, so the list can refresh.
     var onChange: () -> Void = {}
     /// Review modes: receives each finished draft instead of it being saved.
@@ -365,11 +367,17 @@ struct ItemFormView: View {
         }
     }
 
+    private func logAdded(via: String) {
+        Events.log(.manualItemAdded, ["location": .string(draft.isStaple ? "staples" : draft.location.rawValue),
+                                      "is_custom": .bool(draft.ingredient?.isCustom == true), "via": .string(via)])
+    }
+
     @discardableResult
     private func saveNew() async -> Bool {
         guard draft.canAdd else { return false }
         if mode == .reviewAdd {
             onDraft(draft)
+            logAdded(via: "review")
             addedCount += 1
             lastAdded = draft.ingredient?.name
             return true
@@ -378,6 +386,7 @@ struct ItemFormView: View {
         defer { saving = false }
         do {
             _ = try await PantryAPI.add(draft)
+            logAdded(via: via)
             addedCount += 1
             lastAdded = draft.ingredient?.name
             onChange()

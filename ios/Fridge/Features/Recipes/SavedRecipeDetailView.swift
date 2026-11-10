@@ -16,8 +16,14 @@ struct SavedRecipeDetailView: View {
 
     var body: some View {
         RecipeDetailView(recipe: recipe.asRecipe(pantry: pantry), initiallySaved: true,
-                         onSave: { try await SavedRecipesAPI.setDeleted(recipe.id, false) },
-                         onUnsave: { try await SavedRecipesAPI.setDeleted(recipe.id, true) },
+                         onSave: {
+                             try await SavedRecipesAPI.setDeleted(recipe.id, false)
+                             Events.log(.recipeSaved, ["source": .string(recipe.source)])
+                         },
+                         onUnsave: {
+                             try await SavedRecipesAPI.setDeleted(recipe.id, true)
+                             Events.log(.recipeDeleted, ["source": .string(recipe.source), "via": "unsave"])
+                         },
                          onEdit: { editor = .edit },
                          macroStatus: macroStatus,
                          isAIRecipe: recipe.source != "manual",
@@ -52,6 +58,7 @@ struct SavedRecipeDetailView: View {
     private func save(_ draft: RecipeEditDraft) async throws {
         let before = RecipeEditDraft(recipe)
         try await SavedRecipesAPI.update(recipe.id, draft)
+        Events.log(.recipeEdited, ["source": .string(recipe.source)])
         editor = nil
         if let fresh = try? await SavedRecipesAPI.get(recipe.id) { recipe = fresh }
         if draft.needsMacros(comparedTo: before) { await recompute() }
@@ -60,6 +67,7 @@ struct SavedRecipeDetailView: View {
     /// Saves the copy as a new recipe and shows it here (the list has both when going back).
     private func duplicate(_ draft: RecipeEditDraft) async throws {
         let id = try await RecipeCreator.save(draft, source: RecipeEditDraft.duplicateSource(of: recipe.source))
+        Events.log(.recipeCreated, draft.eventProps(duplicate: true))
         editor = nil
         if let copy = try? await SavedRecipesAPI.get(id) { recipe = copy }
         await recompute()

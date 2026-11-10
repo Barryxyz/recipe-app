@@ -43,6 +43,9 @@ struct ScanReview: Codable, Equatable, Identifiable {
     /// The place picked for the scan ("Found 14 items in your Fridge").
     var placement: Placement
     var createdAt = Date()
+    /// For the scan_saved event (F5.2): rows the scan returned, and detected rows the user edited.
+    var detectedCount: Int?
+    var editedIds: Set<UUID>?
 
     /// Rows that will be written (skipped duplicates aren't).
     var rowsToSave: [Row] { rows.filter { !($0.existing != nil && $0.existingChoice == .skip) } }
@@ -77,6 +80,8 @@ struct ScanReview: Codable, Equatable, Identifiable {
                        isCustom: item.ingredient_id == nil,
                        category: item.category)
         }
+        detectedCount = rows.count
+        editedIds = []
         sortRows()
     }
 
@@ -107,6 +112,7 @@ struct ScanReview: Codable, Equatable, Identifiable {
     mutating func update(_ id: Row.ID, draft: ItemDraft) {
         guard let i = rows.firstIndex(where: { $0.id == id }) else { return }
         let renamed = rows[i].draft.ingredient?.id != draft.ingredient?.id
+        if rows[i].draft != draft && !rows[i].addedByHand { editedIds?.insert(id) }
         rows[i].draft = draft
         if renamed {
             // The user picked a different ingredient: no longer a guess.
@@ -116,6 +122,17 @@ struct ScanReview: Codable, Equatable, Identifiable {
             rows[i].category = draft.ingredient?.category
             rows[i].existing = nil
         }
+    }
+
+    /// Counts for the scan_saved event (F5.2): no names, just numbers.
+    var eventProps: [String: Int] {
+        let detected = detectedCount ?? rows.filter { !$0.addedByHand }.count
+        let kept = rows.filter { !$0.addedByHand }
+        return ["detected": detected,
+                "deleted": max(0, detected - kept.count),
+                "edited": kept.filter { editedIds?.contains($0.id) == true }.count,
+                "added_manually": rows.filter(\.addedByHand).count,
+                "saved": saveCount]
     }
 
     mutating func add(_ draft: ItemDraft) {

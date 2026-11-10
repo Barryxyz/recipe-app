@@ -70,6 +70,10 @@ enum RecipeAPI {
         let note: String?
         let limited_by: [String]
         let usage: Usage?
+        /// One per model call; more than one means the fallback ran (F5.2 event).
+        var attempts: [Attempt]? = nil
+
+        struct Attempt: Codable, Equatable { let model: String }
     }
 
     enum RecipeError: LocalizedError, Equatable {

@@ -158,6 +158,8 @@ struct AddMissingSheet: View {
                                          recipeId: UUID(uuidString: recipe.temp_id), recipeTitle: recipe.title,
                                          conversions: conversions)
             try await ShoppingAPI.add(adds)
+            Events.log(.shoppingItemsAdded, ["from": "recipe", "count": .integer(adds.count),
+                                             "merged": .integer(adds.filter { $0.merge_id != nil }.count)])
             onAdded(adds.count)
             dismiss()
         } catch {

@@ -109,7 +109,7 @@ struct RecipesView: View {
                 ScanView(onAddManually: { Task { try? await Task.sleep(for: .milliseconds(400)); showAdd = true } },
                          onSaved: { _ in showScan = false })
             }
-            .sheet(isPresented: $showAdd) { ItemFormView(mode: .add) {} }
+            .sheet(isPresented: $showAdd) { ItemFormView(mode: .add, via: "recipes") {} }
             .alert("Couldn't load your pantry", isPresented: .constant(loadError != nil)) {
                 Button("OK") { loadError = nil }
             } message: { Text(loadError ?? "") }
@@ -251,6 +251,7 @@ struct RecipesView: View {
     /// Saves, forgets the draft and opens the new recipe, which then calculates its nutrition.
     private func createRecipe(_ draft: RecipeEditDraft) async throws {
         let id = try await RecipeCreator.save(draft, source: "manual")
+        Events.log(.recipeCreated, draft.eventProps(duplicate: false))
         RecipeCreator.discardDraft()
         newRecipe = nil
         await loadSaved()
@@ -278,6 +279,7 @@ struct RecipesView: View {
         withAnimation { saved.removeAll { $0.id == r.id } }
         do {
             try await SavedRecipesAPI.setDeleted(r.id, true)
+            Events.log(.recipeDeleted, ["source": .string(r.source), "via": "swipe"])
             withAnimation { deleted = r }
             let shownFor = r.id
             try? await Task.sleep(for: .seconds(5))

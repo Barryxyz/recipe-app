@@ -98,6 +98,7 @@ struct CookedThisView: View {
         defer { applying = false }
         do {
             let snapshot = try await CookedAPI.apply(changes)
+            Events.log(.cookedThis, ["items_changed": .integer(snapshot.count), "servings": .integer(servings)])
             onApplied(snapshot)
             dismiss()
         } catch {

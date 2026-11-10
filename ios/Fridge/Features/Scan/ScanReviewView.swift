@@ -235,6 +235,7 @@ struct ScanReviewView: View {
         defer { saving = false }
         do {
             let r = try await ScanAPI.save(review)
+            Events.log(.scanSaved, review.eventProps.mapValues { .integer($0) })
             ScanReview.clearDraft()
             onSaved(r.added + r.updated)
         } catch {

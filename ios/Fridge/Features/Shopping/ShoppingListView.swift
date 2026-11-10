@@ -122,6 +122,7 @@ struct ShoppingListView: View {
             show("\(name) is already on your list")
         } else {
             do { try await ShoppingAPI.add(adds) } catch { self.error = "Couldn't add \(name)." ; return }
+            Events.log(.shoppingItemsAdded, ["from": "manual", "count": 1, "linked": .bool(ingredientId != nil)])
         }
         newName = ""
         suggestions = []

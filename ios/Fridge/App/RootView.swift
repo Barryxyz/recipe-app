@@ -56,7 +56,7 @@ private struct ReadyView: View {
             // F5.1: rebuild reminders when the app comes back; a tapped reminder opens the pantry.
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { reminders.pantryChanged() }
-                if phase == .background { BackgroundRefresh.schedule() }
+                if phase == .background { BackgroundRefresh.schedule(); Events.flush() }
             }
             .onChange(of: reminders.openPantryRequest) { _, _ in tab = .pantry }
             .alert("Get a heads-up before food expires?", isPresented: Binding(

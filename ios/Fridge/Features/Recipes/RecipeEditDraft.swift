@@ -1,4 +1,5 @@
 import Foundation
+import Supabase
 
 /// F3.2: the recipe editor's state and rules (no UI, no network). Also the start of F3.7.
 struct RecipeEditDraft: Equatable, Codable {
@@ -52,6 +53,18 @@ struct RecipeEditDraft: Equatable, Codable {
 
     // MARK: Creating (F3.7)
 
+    /// Pasted with Paste list / Paste steps (for the recipe_created event, F5.2).
+    /// Optional so drafts kept before this was added still decode.
+    var pastedList: Bool?
+    var pastedSteps: Bool?
+
+    /// recipe_created props: counts only.
+    func eventProps(duplicate: Bool) -> [String: AnyJSON] {
+        ["ingredients": .integer(ingredients.count), "steps": .integer(steps.count),
+         "pasted_list": .bool(pastedList ?? false), "pasted_steps": .bool(pastedSteps ?? false), "duplicate": .bool(duplicate),
+         "custom_ingredients": .integer(ingredients.filter { ($0.ingredientId ?? 0) >= PantryItem.customIdStart || $0.ingredientId == nil }.count)]
+    }
+
     /// Anything typed? (An untouched new recipe can be left without asking.)
     var hasContent: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -77,6 +90,7 @@ struct RecipeEditDraft: Equatable, Codable {
 
     /// Pasted lines as ingredient rows (linking to the catalog happens later, see RecipeCreator).
     mutating func appendPasted(_ lines: [RecipePaste.ParsedIngredient]) {
+        pastedList = true
         ingredients += lines.map {
             Ingredient(ingredientId: nil, name: $0.name, quantity: $0.quantity, unit: $0.unit, grams: nil,
                        note: $0.note, isOptional: false)
@@ -84,6 +98,7 @@ struct RecipeEditDraft: Equatable, Codable {
     }
 
     mutating func appendPasted(steps pasted: [String]) {
+        pastedSteps = true
         steps.removeAll { $0.text.trimmingCharacters(in: .whitespaces).isEmpty }
         steps += pasted.map { Step(text: $0) }
     }

@@ -43,20 +43,7 @@ struct PantryListView: View {
 
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle("Pantry")
-                .toolbar { toolbar }
-                .searchable(text: $search, prompt: "Search your pantry")
-                .refreshable { await load() }
-                .task { await load() }
-                // A tapped expiry reminder (F5.1): All, with Use these first open.
-                .onChange(of: ExpiryReminders.shared.openPantryRequest) { _, _ in
-                    search = ""
-                    tab = .all
-                    useFirstExpanded = true
-                    Task { await load() }
-                }
-                .sheet(isPresented: $showAdd) { ItemFormView(mode: .add) { Task { await load() } } }
+            withSheets
                 .sheet(item: $editing) { item in ItemFormView(mode: .edit(item)) { Task { await load() } } }
                 .sheet(isPresented: $showSettings) { SettingsView(user: user) }
                 .sheet(isPresented: $showHistory) { HistoryView { Task { await load() } } }
@@ -101,6 +88,26 @@ struct PantryListView: View {
                     Button("OK") { actionError = nil }
                 } message: { Text(actionError ?? "") }
         }
+    }
+
+    /// The list with its title, search and the add sheet (split out so the body type-checks quickly).
+    private var withSheets: some View {
+        content
+            .navigationTitle("Pantry")
+            .toolbar { toolbar }
+            .searchable(text: $search, prompt: "Search your pantry")
+            .refreshable { await load() }
+            .task { await load() }
+            // A tapped expiry reminder (F5.1): All, with Use these first open.
+            .onChange(of: ExpiryReminders.shared.openPantryRequest) { _, _ in
+                search = ""
+                tab = .all
+                useFirstExpanded = true
+                Task { await load() }
+            }
+            .sheet(isPresented: $showAdd) {
+                ItemFormView(mode: .add, via: items.isEmpty ? "empty_state" : "pantry") { Task { await load() } }
+            }
     }
 
     // MARK: Content

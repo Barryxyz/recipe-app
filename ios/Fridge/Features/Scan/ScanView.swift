@@ -261,6 +261,8 @@ struct ScanView: View {
                 let response = try await ScanAPI.scan(placement: where_, photos: toSend)
                 guard !Task.isCancelled else { return }   // cancelled: no further UI changes
                 usage = response.usage ?? usage
+                Events.log(.scanCompleted, ["location": .string(where_.rawValue), "photos": .integer(toSend.count),
+                                            "items_detected": .integer(response.items.count)])
                 photos = []                                // photos are no longer needed: release them
                 phase = .review(ScanReview(scan: response, placement: where_, stapleIds: stapleIds))
             } catch is CancellationError {
