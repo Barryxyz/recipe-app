@@ -10,10 +10,11 @@ final class ExpiryDigestTests: XCTestCase {
     override func setUp() { cal.timeZone = TimeZone(identifier: "Europe/London")! }
 
     /// Expires at the end of the local day, `days` from today (as F1.6 stores it).
-    private func item(_ name: String, days: Int?, staple: Bool = false, status: PantryItem.Status = .active) -> PantryItem {
+    private func item(_ name: String, days: Int?, q: Double? = 1, unit: String = "each", staple: Bool = false,
+                      status: PantryItem.Status = .active) -> PantryItem {
         let exp = days.flatMap { cal.date(byAdding: .day, value: $0, to: cal.startOfDay(for: now)) }
             .flatMap { cal.date(bySettingHour: 23, minute: 59, second: 59, of: $0) }
-        return PantryItem(id: UUID(), ingredientId: 1, displayName: name, quantity: 1, unit: "each", location: .fridge,
+        return PantryItem(id: UUID(), ingredientId: 1, displayName: name, quantity: q, unit: unit, location: .fridge,
                           addedAt: now, expiresAt: exp, expiryOverridden: false, status: status, source: .manual,
                           isStaple: staple)
     }
@@ -22,30 +23,33 @@ final class ExpiryDigestTests: XCTestCase {
         ExpiryDigest.digest(items: items, day: cal.date(byAdding: .day, value: dayOffset, to: now)!, leadDays: lead, calendar: cal)
     }
 
-    func testSpecExample() {
-        let d = digest([item("spinach", days: 1), item("milk", days: 0), item("chicken thighs", days: 1)])
+    func testMixedDaysAreGroupedWithAmounts() {
+        let d = digest([item("spinach", days: 1, q: 200, unit: "g"), item("milk", days: 0, q: 1, unit: "l"),
+                        item("chicken thighs", days: 1, q: 4, unit: "each")])
         XCTAssertEqual(d?.title, "3 items expire soon")
-        XCTAssertEqual(d?.body, "milk (today), chicken thighs, spinach (tomorrow)")
+        XCTAssertEqual(d?.body, "Today: milk (1 l) · Tomorrow: chicken thighs (4), spinach (200 g)")
     }
 
-    func testMoreThanThreeAndSingleItem() {
-        let d = digest([item("a", days: 0), item("b", days: 0), item("c", days: 1), item("d", days: 1), item("e", days: 1)])
-        XCTAssertEqual(d?.body, "a, b (today), c (tomorrow) +2 more")
-        XCTAssertEqual(digest([item("milk", days: 1)])?.title, "Milk expires tomorrow")
+    func testOneDayPutsTheDayOnlyInTheTitle() {
+        XCTAssertEqual(digest([item("milk", days: 1, q: 1, unit: "l")])?.title, "Milk expires tomorrow")
+        XCTAssertEqual(digest([item("milk", days: 1, q: 1, unit: "l")])?.body, "milk (1 l)")
+        let d = digest([item("a", days: 0), item("b", days: 0, q: nil), item("c", days: 0), item("d", days: 0)])
+        XCTAssertEqual(d?.title, "4 items expire today")
+        XCTAssertEqual(d?.body, "a (1), b, c (1) +1 more", "no amount (\"some\"): just the name")
     }
 
     func testLeadTimeStaplesAndUsedItems() {
         let items = [item("yogurt", days: 2), item("salt", days: 0, staple: true), item("eggs", days: 0, status: .used),
                      item("rice", days: nil)]
         XCTAssertNil(digest(items, lead: 2), "2 days away is outside a 2-day warning; staples, used and no-date items never count")
-        XCTAssertEqual(digest(items, lead: 3)?.body, "yogurt (in 2 days)")
+        XCTAssertEqual(digest(items, lead: 3)?.title, "Yogurt expires in 2 days")
     }
 
     func testExpiredItemsAreMentionedOnceTheDayAfter() {
         let milk = item("milk", days: -1)
         XCTAssertEqual(digest([milk])?.title, "Milk expired yesterday")
         XCTAssertNil(digest([item("milk", days: -2)]), "only the day after")
-        XCTAssertEqual(digest([milk, item("ham", days: 0)])?.body, "milk (expired), ham (today)")
+        XCTAssertEqual(digest([milk, item("ham", days: 0, q: 200, unit: "g")])?.body, "Expired yesterday: milk (1) · Today: ham (200 g)")
     }
 
     func testPlanSkipsEmptyDaysAndPastTimes() {

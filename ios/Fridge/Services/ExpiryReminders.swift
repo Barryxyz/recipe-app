@@ -178,41 +178,52 @@ enum ExpiryDigest {
     static func digest(items: [PantryItem], day: Date, leadDays: Int,
                        calendar: Calendar = .current) -> (title: String, body: String)? {
         let start = calendar.startOfDay(for: day)
-        let entries: [(name: String, offset: Int, date: Date)] = items.compactMap { item in
+        let entries: [(name: String, amount: String, offset: Int, date: Date)] = items.compactMap { item in
             guard item.status == .active, !item.isStaple, let exp = item.expiresAt,
                   let offset = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: exp)).day,
                   offset == -1 || (0..<max(1, leadDays)).contains(offset) else { return nil }
-            return (item.displayName, offset, exp)
+            let amount = item.quantity == nil ? "" : MacroFormat.amount(item.quantity, unit: item.unit == "each" ? nil : item.unit)
+            return (item.displayName, amount, offset, exp)
         }
         .sorted { ($0.offset, $0.date, $0.name) < ($1.offset, $1.date, $1.name) }
         guard !entries.isEmpty else { return nil }
 
-        func label(_ offset: Int) -> String {
+        func when(_ offset: Int) -> String {
             switch offset {
-            case -1: "expired"
+            case -1: "expired yesterday"
             case 0: "today"
             case 1: "tomorrow"
             default: "in \(offset) days"
             }
         }
-
-        let shown = Array(entries.prefix(3))
-        var parts: [String] = []
-        for (i, e) in shown.enumerated() {
-            let lastOfGroup = i == shown.count - 1 || shown[i + 1].offset != e.offset
-            parts.append(lastOfGroup ? "\(e.name) (\(label(e.offset)))" : e.name)
+        func named(_ e: (name: String, amount: String, offset: Int, date: Date)) -> String {
+            e.amount.isEmpty ? e.name : "\(e.name) (\(e.amount))"
         }
-        var body = parts.joined(separator: ", ")
+
+        // The title says when; the body lists the items with how much is left. When the items
+        // expire on different days, the body groups them by day ("Today: … · Tomorrow: …").
+        let offsets = entries.map(\.offset).reduce(into: [Int]()) { if !$0.contains($1) { $0.append($1) } }
+        let shown = Array(entries.prefix(3))
+        var body: String
+        if offsets.count == 1 {
+            body = shown.map(named).joined(separator: ", ")
+        } else {
+            body = offsets.compactMap { o -> String? in
+                let group = shown.filter { $0.offset == o }
+                guard !group.isEmpty else { return nil }
+                return "\(when(o).capitalizedFirst): " + group.map(named).joined(separator: ", ")
+            }.joined(separator: " · ")
+        }
         if entries.count > 3 { body += " +\(entries.count - 3) more" }
 
-        let expiredOnly = entries.allSatisfy { $0.offset == -1 }
         let title: String
         if entries.count == 1 {
             let e = entries[0]
-            title = e.offset == -1 ? "\(e.name.capitalizedFirst) expired yesterday"
-                : "\(e.name.capitalizedFirst) expires \(label(e.offset))"
+            title = e.offset == -1 ? "\(e.name.capitalizedFirst) expired yesterday" : "\(e.name.capitalizedFirst) expires \(when(e.offset))"
+        } else if offsets.count == 1 {
+            title = offsets[0] == -1 ? "\(entries.count) items expired yesterday" : "\(entries.count) items expire \(when(offsets[0]))"
         } else {
-            title = expiredOnly ? "\(entries.count) items expired yesterday" : "\(entries.count) items expire soon"
+            title = "\(entries.count) items expire soon"
         }
         return (title, body)
     }
