@@ -83,12 +83,14 @@ struct RecipeDetailView: View {
 
             Section {
                 Button { cooking = true } label: {
-                    HStack {
-                        Spacer(minLength: 0)
-                        Label("Cooked this", systemImage: "checkmark.circle").font(.headline)
-                        Spacer(minLength: 0)
+                    // Not a Label: inside a List, a Label's title is pushed into a column after
+                    // the icon, so it doesn't centre.
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle")
+                        Text("Cooked this")
                     }
-                    .frame(minHeight: 44)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
                 }
                 .buttonStyle(.borderedProminent)
                 .listRowInsets(EdgeInsets())
