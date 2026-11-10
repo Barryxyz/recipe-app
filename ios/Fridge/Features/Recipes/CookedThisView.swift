@@ -133,7 +133,7 @@ private struct CookedRowView: View {
 
             if row.mode == .subtract || row.mode == .setLeft {
                 HStack {
-                    Text(row.mode == .subtract ? "Use" : "Left")
+                    Text(row.mode == .subtract ? "Used" : "Left")
                     TextField(row.mode == .subtract ? "amount" : "how much is left", value: $row.amount,
                               format: .number.precision(.fractionLength(0...2)))
                         .keyboardType(.decimalPad)

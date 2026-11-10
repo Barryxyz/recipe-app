@@ -83,16 +83,20 @@ struct RecipeDetailView: View {
 
             Section {
                 Button { cooking = true } label: {
-                    Label("Cooked this", systemImage: "checkmark.circle")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                    HStack {
+                        Spacer(minLength: 0)
+                        Label("Cooked this", systemImage: "checkmark.circle").font(.headline)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: 44)
                 }
                 .buttonStyle(.borderedProminent)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             } footer: {
                 Text("Takes what you used out of your pantry.")
-                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
 
             if isAIRecipe { Section {
