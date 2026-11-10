@@ -27,6 +27,7 @@ struct RecipeEditorView: View {
     @State private var allergens: [String] = []
     @State private var allergenTags: [Int64: [String]] = [:]
     @State private var confirmKeepDraft = false
+    @FocusState private var focusedTime: String?
 
     enum PasteKind: String, Identifiable { case ingredients, steps; var id: String { rawValue } }
 
@@ -231,15 +232,18 @@ struct RecipeEditorView: View {
     }
 
     private func minutesField(_ label: String, value: Binding<Int?>) -> some View {
+        // The field fills the row and a tap anywhere on the row focuses it.
         HStack {
             Text(label)
-            Spacer()
             TextField("0", value: value, format: .number)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 70)
+                .frame(maxWidth: .infinity, minHeight: 32)
+                .focused($focusedTime, equals: label)
             Text("min").foregroundStyle(.secondary)
         }
+        .contentShape(Rectangle())
+        .onTapGesture { focusedTime = label }
     }
 
     private func ingredientRow(_ ing: RecipeEditDraft.Ingredient) -> some View {
@@ -279,6 +283,7 @@ struct IngredientEditSheet: View {
     /// The name the catalog link belongs to; typing something else unlinks it.
     @State private var linkedName: String?
     @FocusState private var focus: Bool
+    @FocusState private var amountFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -315,13 +320,15 @@ struct IngredientEditSheet: View {
                 Section {
                     HStack {
                         Text("Amount")
-                        Spacer()
                         TextField("some", value: $ingredient.quantity, format: .number.precision(.fractionLength(0...2)))
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
-                            .frame(width: 90)
+                            .frame(maxWidth: .infinity, minHeight: 32)
+                            .focused($amountFocused)
                             .disabled(ingredient.unit == "to taste")
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture { if ingredient.unit != "to taste" { amountFocused = true } }
                     Picker("Unit", selection: $ingredient.unit) {
                         ForEach(RecipeEditDraft.units(including: ingredient.unit), id: \.self) { Text($0).tag($0) }
                     }
