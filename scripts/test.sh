@@ -57,7 +57,8 @@ PY
 import json, sys
 t = sys.stdin.read()
 try:
-    d = json.loads(t[t.index("{"):])
+    # raw_decode: ignore anything printed after the JSON (e.g. the CLI update notice).
+    d, _ = json.JSONDecoder().raw_decode(t[t.index("{"):])
     print(d["rows"][0]["result"])
 except Exception:
     print("ERROR: " + t.strip().splitlines()[-1][:400])
