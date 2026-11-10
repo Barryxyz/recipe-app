@@ -27,6 +27,9 @@ struct RecipeDetailView: View {
     @State private var saveError: String?
     @State private var cooking = false
     @State private var cookedUndo: [CookedAPI.Snapshot]?
+    @State private var shopping: (lines: [ShoppingPlan.Line], conversions: [Int64: CookedThis.Conversion])?
+    @State private var addingMissing = false
+    @State private var toast: String?
 
     var body: some View {
         List {
@@ -95,6 +98,20 @@ struct RecipeDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
+
+                if let shopping, !shopping.lines.isEmpty {
+                    Button { addingMissing = true } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "cart.badge.plus")
+                            Text("Add missing to shopping list (\(shopping.lines.count))")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 40, alignment: .center)
+                    }
+                    .buttonStyle(.bordered)
+                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 0, trailing: 0))
+                    .listRowBackground(Color.clear)
+                }
             } footer: {
                 Text("Takes what you used out of your pantry.")
                     .multilineTextAlignment(.center)
@@ -147,12 +164,34 @@ struct RecipeDetailView: View {
             CookedThisView(recipe: recipe) { snapshot in
                 withAnimation { cookedUndo = snapshot }
                 Task {
+                    await loadShopping()
                     try? await Task.sleep(for: .seconds(5))
                     if cookedUndo == snapshot { withAnimation { cookedUndo = nil } }
                 }
             }
         }
+        .sheet(isPresented: $addingMissing) {
+            if let shopping {
+                AddMissingSheet(recipe: recipe, lines: shopping.lines, conversions: shopping.conversions) { n in
+                    let text = "\(n) item\(n == 1 ? "" : "s") added to shopping list"
+                    withAnimation { toast = text }
+                    Task {
+                        try? await Task.sleep(for: .seconds(3))
+                        if toast == text { withAnimation { toast = nil } }
+                    }
+                }
+            }
+        }
+        .task { await loadShopping() }
         .overlay(alignment: .bottom) {
+            if let toast, cookedUndo == nil {
+                Label(toast, systemImage: "cart.fill")
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .padding()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             if let snapshot = cookedUndo {
                 HStack {
                     Label("Pantry updated", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
@@ -162,6 +201,7 @@ struct RecipeDetailView: View {
                         Task {
                             do { try await CookedAPI.undo(snapshot) }
                             catch { saveError = "Couldn't undo the pantry change." }
+                            await loadShopping()
                         }
                     }
                     .fontWeight(.semibold)
@@ -177,6 +217,14 @@ struct RecipeDetailView: View {
         } message: { Text(saveError ?? "") }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
+    }
+
+    /// What the recipe still needs from the shop, against the pantry as it is now (F3.5).
+    private func loadShopping() async {
+        guard let pantry = try? await PantryAPI.activeItems() else { return }
+        let ids = recipe.ingredients.compactMap(\.ingredient_id) + pantry.compactMap(\.ingredientId)
+        let conversions = (try? await CookedAPI.conversions(ids)) ?? [:]
+        shopping = (ShoppingPlan.lines(for: recipe, pantry: pantry, conversions: conversions), conversions)
     }
 
     /// One of the three header facts: equal width, always one line.

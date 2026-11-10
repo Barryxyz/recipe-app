@@ -44,7 +44,13 @@ private struct ReadyView: View {
                 .tabItem { AppTabBar.label(.recipes) }
                 .tag(AppTab.recipes)
                 .background(TabBarHeight(extra: AppTabBar.extraHeight))
+            ShoppingListView()
+                .tabItem { AppTabBar.label(.shopping) }
+                .tag(AppTab.shopping)
+                .badge(ShoppingBadge.shared.count)
+                .background(TabBarHeight(extra: AppTabBar.extraHeight))
         }
+            .task { await ShoppingBadge.shared.refresh() }
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
             }
@@ -61,10 +67,14 @@ private struct ReadyView: View {
 }
 
 enum AppTab: CaseIterable {
-    case pantry, recipes
+    case pantry, recipes, shopping
 
-    var title: String { self == .pantry ? "Pantry" : "Recipes" }
-    var icon: String { self == .pantry ? "refrigerator" : "fork.knife" }
+    var title: String {
+        switch self { case .pantry: "Pantry"; case .recipes: "Recipes"; case .shopping: "Shopping" }
+    }
+    var icon: String {
+        switch self { case .pantry: "refrigerator"; case .recipes: "fork.knife"; case .shopping: "cart" }
+    }
 }
 
 /// The standard iPhone tab bar, solid instead of translucent (like most fitness and food apps).
