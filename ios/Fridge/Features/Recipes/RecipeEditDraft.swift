@@ -101,6 +101,27 @@ struct RecipeEditDraft: Equatable {
         servings = newServings
     }
 
+    /// The amounts servings changes are scaled from, so stepping 2 -> 1 -> 2 gets back exactly
+    /// the original amounts instead of compounding rounding.
+    struct ScaleBase: Equatable {
+        var servings: Int
+        var ingredients: [Ingredient]
+        /// The ingredients as the last scale left them; if they differ now, the user edited them.
+        var lastScaled: [Ingredient]
+    }
+
+    /// Changing servings always scales the ingredients (from `base` while they're unedited).
+    mutating func changeServings(to n: Int, base: inout ScaleBase?) {
+        guard n != servings else { return }
+        if base == nil || base!.lastScaled != ingredients {
+            base = ScaleBase(servings: servings, ingredients: ingredients, lastScaled: ingredients)
+        }
+        ingredients = base!.ingredients
+        servings = base!.servings
+        scale(to: n)
+        base!.lastScaled = ingredients
+    }
+
     /// g / ml / oz to whole numbers, kg / l / lb to 0.1, cups, spoons and pieces to the nearest ¼
     /// (never down to 0).
     static func round(_ q: Double, unit: String) -> Double {

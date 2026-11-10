@@ -122,6 +122,23 @@ final class RecipeEditDraftTests: XCTestCase {
         XCTAssertEqual(RecipeEditDraft.round(0.2, unit: "g"), 1)
     }
 
+    func testChangingServingsAlwaysScalesWithoutDrift() {
+        var d = draft()
+        var base: RecipeEditDraft.ScaleBase?
+        let original = d.ingredients
+        d.changeServings(to: 1, base: &base)
+        d.changeServings(to: 3, base: &base)
+        XCTAssertEqual(d.ingredients[1].quantity, 1.5)
+        d.changeServings(to: 2, base: &base)
+        XCTAssertEqual(d.ingredients, original, "back to 2 servings gives the exact original amounts")
+
+        var lime = d.ingredients[1]
+        lime.quantity = 3
+        d.update(lime)
+        d.changeServings(to: 4, base: &base)
+        XCTAssertEqual(d.ingredients[1].quantity, 6, "a manual edit becomes the new base")
+    }
+
     func testWeightFollowsEdits() {
         var d = draft()
         var lime = d.ingredients[1]

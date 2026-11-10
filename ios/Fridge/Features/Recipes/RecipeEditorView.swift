@@ -11,7 +11,7 @@ struct RecipeEditorView: View {
     @State private var draft: RecipeEditDraft
     @State private var editingIngredient: RecipeEditDraft.Ingredient?
     @State private var addingIngredient = false
-    @State private var pendingServings: Int?
+    @State private var scaleBase: RecipeEditDraft.ScaleBase?
     @State private var confirmDiscard = false
     @State private var saving = false
     @State private var saveError: String?
@@ -41,7 +41,7 @@ struct RecipeEditorView: View {
                 }
 
                 Section {
-                    Stepper(value: Binding(get: { draft.servings }, set: { askToScale($0) }),
+                    Stepper(value: Binding(get: { draft.servings }, set: { draft.changeServings(to: $0, base: &scaleBase) }),
                             in: RecipeEditDraft.servingsRange) {
                         Text("Servings: \(draft.servings)")
                     }
@@ -107,15 +107,6 @@ struct RecipeEditorView: View {
                 IngredientEditSheet(ingredient: .init(name: "", quantity: nil, unit: "g", note: "", isOptional: false),
                                     isNew: true) { draft.ingredients.append($0) }
             }
-            .confirmationDialog("Scale ingredients?", isPresented: Binding(
-                get: { pendingServings != nil }, set: { if !$0 { pendingServings = nil } }), titleVisibility: .visible) {
-                if let n = pendingServings {
-                    Button("Scale ingredients for \(n)") { draft.scale(to: n); pendingServings = nil }
-                    Button("Just change the number") { draft.servings = n; pendingServings = nil }
-                }
-            } message: {
-                Text("Change every amount to match the new number of servings?")
-            }
             .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Discard changes", role: .destructive) { onCancel() }
                 Button("Keep editing", role: .cancel) {}
@@ -124,11 +115,6 @@ struct RecipeEditorView: View {
                 Button("OK") { saveError = nil }
             } message: { Text(saveError ?? "") }
         }
-    }
-
-    private func askToScale(_ n: Int) {
-        guard n != draft.servings else { return }
-        if draft.ingredients.contains(where: { $0.quantity != nil }) { pendingServings = n } else { draft.servings = n }
     }
 
     private func save() async {
