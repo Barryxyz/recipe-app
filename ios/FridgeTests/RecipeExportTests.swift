@@ -43,6 +43,7 @@ final class RecipeExportTests: XCTestCase {
 
         Per serving: ≈520 kcal · 38 g protein · 41 g carbs · 22 g fat
         \(RecipeExport.safetyLine)
+        \(RecipeExport.allergenLine)
         """)
     }
 
@@ -50,6 +51,7 @@ final class RecipeExportTests: XCTestCase {
         let t = RecipeExport.text(recipe(kcal: 0), .init(isAI: false, timesKnown: (false, false)))
         XCTAssertTrue(t.hasPrefix("Garlic Spinach Chicken & <Rice> (serves 2)\n"))
         XCTAssertFalse(t.contains("AI-generated"))
+        XCTAssertTrue(t.hasSuffix(RecipeExport.allergenLine), "the allergy warning is on every export")
         XCTAssertFalse(t.contains("Per serving"), "no nutrition yet: no line")
     }
 
@@ -58,6 +60,7 @@ final class RecipeExportTests: XCTestCase {
         XCTAssertEqual(short.pageCount, 1)
         XCTAssertTrue(short.string?.contains("Garlic Spinach Chicken & <Rice>") == true, "title is real text, escaped correctly")
         XCTAssertTrue(short.string?.contains("AI-generated recipe") == true)
+        XCTAssertTrue(short.string?.contains("hidden allergens") == true, "the allergy warning is in the PDF")
         let long = try XCTUnwrap(PDFDocument(data: RecipeExport.pdfData(recipe(steps: 45))))
         XCTAssertGreaterThan(long.pageCount, 1)
         XCTAssertTrue(long.string?.contains("Step number 45") == true, "the last step isn't cut off")

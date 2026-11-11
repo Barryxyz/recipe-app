@@ -11,6 +11,9 @@ enum RecipeExport {
     }
 
     static let safetyLine = "AI-generated recipe: check that meat, poultry, fish and eggs reach safe temperatures."
+    /// On every export (AI or not): the copy may reach someone with allergies the recipe wasn't made for.
+    static let allergenLine = "Allergies: always read ingredient labels. Packaged foods (sauces, stocks, spice mixes) " +
+        "can contain hidden allergens or traces. If an allergy is severe, double-check every ingredient before cooking."
 
     // MARK: Text
 
@@ -22,6 +25,7 @@ enum RecipeExport {
         lines += ["", "Steps"] + r.steps.enumerated().map { "\($0.offset + 1). " + RecipeText.stepWithoutNumber($0.element) }
         if let m = macros(r) { lines += ["", m] }
         if o.isAI { lines.append(safetyLine) }
+        lines.append(allergenLine)
         return lines.joined(separator: "\n")
     }
 
@@ -91,6 +95,7 @@ enum RecipeExport {
         h += "<h2>Steps</h2><ol>" + r.steps.map { "<li>\(esc(RecipeText.stepWithoutNumber($0)))</li>" }.joined() + "</ol>"
         if let m = macros(r) { h += "<div class=\"macros\">\(esc(m))</div>" }
         if o.isAI { h += "<div class=\"note\">\(esc(safetyLine))</div>" }
+        h += "<div class=\"note\">\(esc(allergenLine))</div>"
         return h + "</body></html>"
     }
 
