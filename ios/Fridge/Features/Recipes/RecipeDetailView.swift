@@ -30,6 +30,9 @@ struct RecipeDetailView: View {
     @State private var shopping: (lines: [ShoppingPlan.Line], conversions: [Int64: CookedThis.Conversion])?
     @State private var addingMissing = false
     @State private var toast: String?
+    @State private var toastIcon = "cart.fill"
+    @State private var exportURL: URL?
+    @State private var lastExport: URL?
 
     var body: some View {
         List {
@@ -130,7 +133,28 @@ struct RecipeDetailView: View {
             } }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $exportURL, onDismiss: { removeExport() }) { url in
+            ShareSheet(items: [url]) { exportURL = nil }
+                .ignoresSafeArea()
+        }
         .toolbar {
+            // F4.4: in the ⋯ menu (with Duplicate on saved recipes). Works offline.
+            ToolbarItem(placement: .secondaryAction) {
+                Button {
+                    UIPasteboard.general.string = RecipeExport.text(recipe, exportOptions)
+                    show("Copied", icon: "doc.on.doc.fill")
+                } label: { Label("Copy as text", systemImage: "doc.on.doc") }
+            }
+            ToolbarItem(placement: .secondaryAction) {
+                Button {
+                    do {
+                        let url = try RecipeExport.pdfFile(recipe, exportOptions)
+                        lastExport = url
+                        exportURL = url
+                    }
+                    catch { saveError = "Couldn't make the PDF." }
+                } label: { Label("Export PDF", systemImage: "doc.richtext") }
+            }
             if let onEdit {
                 ToolbarItem(placement: .primaryAction) { Button("Edit", action: onEdit).needsInternet() }
             }
@@ -174,19 +198,14 @@ struct RecipeDetailView: View {
         .sheet(isPresented: $addingMissing) {
             if let shopping {
                 AddMissingSheet(recipe: recipe, lines: shopping.lines, conversions: shopping.conversions) { n in
-                    let text = "\(n) item\(n == 1 ? "" : "s") added to shopping list"
-                    withAnimation { toast = text }
-                    Task {
-                        try? await Task.sleep(for: .seconds(3))
-                        if toast == text { withAnimation { toast = nil } }
-                    }
+                    show("\(n) item\(n == 1 ? "" : "s") added to shopping list", icon: "cart.fill")
                 }
             }
         }
         .task { await loadShopping() }
         .overlay(alignment: .bottom) {
             if let toast, cookedUndo == nil {
-                Label(toast, systemImage: "cart.fill")
+                Label(toast, systemImage: toastIcon)
                     .padding()
                     .frame(maxWidth: .infinity)
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -218,6 +237,25 @@ struct RecipeDetailView: View {
         } message: { Text(saveError ?? "") }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
+    }
+
+    private var exportOptions: RecipeExport.Options {
+        RecipeExport.Options(isAI: isAIRecipe, timesKnown: timesKnown)
+    }
+
+    private func show(_ text: String, icon: String) {
+        toastIcon = icon
+        withAnimation { toast = text }
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            if toast == text { withAnimation { toast = nil } }
+        }
+    }
+
+    /// The exported PDF is only kept while the share sheet is open.
+    private func removeExport() {
+        if let url = lastExport { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        lastExport = nil
     }
 
     /// What the recipe still needs from the shop, against the pantry as it is now (F3.5).
@@ -292,4 +330,21 @@ struct RecipeDetailView: View {
 
 extension RecipeAPI.Recipe: Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(temp_id); hasher.combine(title) }
+}
+
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
+
+/// The system share sheet (Save to Files, Print, AirDrop, Mail…).
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    var onDone: () -> Void = {}
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let vc = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        vc.completionWithItemsHandler = { _, _, _, _ in onDone() }
+        return vc
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
 }
