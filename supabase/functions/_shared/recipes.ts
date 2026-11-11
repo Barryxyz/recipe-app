@@ -20,6 +20,8 @@ export const RequestSchema = z.object({
   prefer_expiring: z.boolean(),
   only_on_hand: z.boolean(),
   exclude_pantry_item_ids: z.array(z.uuid()).max(1000),
+  /** Titles the user was shown recently (their last ideas): suggest different dishes. */
+  avoid_titles: z.array(z.string().trim().max(120)).max(12).optional(),
 });
 export type RecipeRequest = z.infer<typeof RequestSchema>;
 
@@ -108,12 +110,16 @@ Hard rules (a recipe that breaks one is thrown away):
 - Never use more of a pantry item than the user has.
 - Respect the allergies and diets exactly, including hidden sources (pesto has nuts, soy sauce has wheat and soy, Worcestershire has fish, mayonnaise has egg).
 - Stay within the time limit (prep + cook).
-- Use metric or common kitchen units (g, kg, ml, l, tsp, tbsp, cup, each). For every ingredient also give "grams": your estimate of its weight.
+- Use metric or common kitchen units (g, kg, ml, l, tsp, tbsp, cup, each). Garlic is always in cloves (unit "clove"), even when the pantry lists it as "each" or "some"; a pinch is "pinch". For every ingredient also give "grams": your estimate of its weight.
 - Steps are clear, in order, one instruction each, without step numbers (the app numbers them), and include safe internal temperatures for meat (pork 63 °C / 145 °F, ground meat 71 °C / 160 °F), poultry (74 °C / 165 °F), fish (63 °C / 145 °F) and egg dishes (cook until set).
 
 Quality rules:
-- Only combine ingredients that genuinely go well together. A recipe does not need to use every pantry item.
-- Aim for 3 recipes that differ from each other (not three stir-fries). Only when the pantry and options can't support 3 good ones, return fewer, or none, rather than a strange or forced recipe.
+- Only combine ingredients that genuinely go well together, the way a real cook or a well-known recipe would. A recipe does not need to use every pantry item, and an item that doesn't fit any good recipe is simply left out.
+- No odd pairings just to use something up: no jam, ketchup or sweet fruit glazes on fish, no fruit in savoury mains unless it's a well-known dish (a fruit salsa, citrus with fish, apple with pork are fine), no ketchup in desserts or drinks.
+- Aim for 3 recipes that are clearly different dishes: vary the main ingredient, the cooking method and the kind of dish (e.g. a stir-fry, a bake and a soup, not three stir-fries or three pastas).
+- When a cuisine is set, every recipe is a recognisable dish of that cuisine (its flavours and techniques), not a generic dish with a cuisine name.
+- If RECENTLY SUGGESTED lists dishes, suggest different ones (a different dish, not the same dish renamed), unless nothing else good is possible.
+- Only when the pantry and options can't support 3 good ones, return fewer, or none, rather than a strange or forced recipe.
 - "note": null when you return 3 good recipes. Otherwise one short sentence, addressed to the user, about what they could change to get more or better recipes (e.g. a time limit, "only use what I have", a pantry without a main ingredient). Never mention their allergies or diets, or which items you left out because of them: they already know.
 - "limited_by": the options or the pantry that limited you, only when note is set; otherwise empty.
 - Don't calculate nutrition.`;
@@ -152,6 +158,8 @@ export function buildPrompt(ctx: Context): string {
   if (r.prefer_expiring) lines.push("- Prefer recipes that use the EXPIRING items.");
   lines.push(`- Diets: ${ctx.diets.length ? ctx.diets.map((d) => DIET_TEXT[d] ?? d).join("; ") : "none"}`);
   lines.push(`- Allergies (never use, not even traces): ${ctx.allergens.length ? ctx.allergens.join(", ") : "none"}`);
+  const avoid = (r.avoid_titles ?? []).map((t) => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+  if (avoid.length) lines.push("", "RECENTLY SUGGESTED (suggest different dishes)", ...avoid.map((t) => `- ${t}`));
   return lines.join("\n");
 }
 

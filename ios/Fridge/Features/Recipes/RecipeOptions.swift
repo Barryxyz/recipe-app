@@ -127,6 +127,9 @@ struct RecipeRequest: Codable, Equatable {
     var prefer_expiring: Bool
     var only_on_hand: Bool
     var exclude_pantry_item_ids: [UUID]
+    /// The titles of the last ideas, so a new request suggests different dishes. Set just
+    /// before sending; not part of the options.
+    var avoid_titles: [String]? = nil
 
     /// Options for the recipes_generated event (F5.2). A typed cuisine is "other", never the text.
     var eventProps: [String: AnyJSON] {
@@ -162,8 +165,9 @@ struct RecipeRequest: Codable, Equatable {
         try c.encode(prefer_expiring, forKey: .prefer_expiring)
         try c.encode(only_on_hand, forKey: .only_on_hand)
         try c.encode(exclude_pantry_item_ids, forKey: .exclude_pantry_item_ids)
+        if let avoid_titles, !avoid_titles.isEmpty { try c.encode(avoid_titles, forKey: .avoid_titles) }
     }
     enum CodingKeys: String, CodingKey {
-        case servings, max_minutes, meal, cuisine, prefer_expiring, only_on_hand, exclude_pantry_item_ids
+        case servings, max_minutes, meal, cuisine, prefer_expiring, only_on_hand, exclude_pantry_item_ids, avoid_titles
     }
 }

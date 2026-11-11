@@ -116,8 +116,10 @@ try:
                  for n, q, u, loc, d in items]
         code, made = rest("POST", "pantry_items?columns=" + ",".join(cols), TOKEN, rows)
         assert code == 201, made
+        last_titles = []
         for i, opts in enumerate(OPTION_SETS[pname]):
-            req = {**BASE, **opts}
+            # Like the app: the previous ideas' titles go along, so new requests suggest other dishes.
+            req = {**BASE, **opts, **({"avoid_titles": last_titles} if last_titles else {})}
             t = time.time()
             code, body = http("POST", FN, req, TOKEN)
             secs = time.time() - t
@@ -127,6 +129,8 @@ try:
                    "limited_by": body.get("limited_by") if ok else None,
                    "attempts": body.get("attempts") if ok else None, "error": None if ok else str(body)[:300]}
             results.append(rec)
+            if rec["recipes"]:
+                last_titles = [x["title"] for x in rec["recipes"]]
             fb = ok and len(body.get("attempts") or []) > 1
             print(f"  {pname:9} #{i + 1}  {code}  {secs:5.1f}s  {len(rec['recipes'])} recipes"
                   f"{'  FALLBACK' if fb else ''}{'  note: ' + rec['note'] if rec['note'] else ''}")

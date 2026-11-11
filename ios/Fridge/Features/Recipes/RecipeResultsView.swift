@@ -123,7 +123,10 @@ struct RecipeResultsView: View {
         task?.cancel()
         task = Task {
             do {
-                let response = try await RecipeAPI.generate(r)
+                // The last ideas (what Regenerate replaces, or the previous set): ask for different dishes.
+                var sent = r
+                sent.avoid_titles = RecipeSession.load().map { Array($0.response.recipes.map(\.title).prefix(12)) }
+                let response = try await RecipeAPI.generate(sent)
                 Events.log(.recipesGenerated, ["count": .integer(response.recipes.count),
                                                "fallback_used": .bool((response.attempts?.count ?? 1) > 1),
                                                "latency_ms": .integer(Int(Date.now.timeIntervalSince(started) * 1000)),

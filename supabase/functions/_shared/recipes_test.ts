@@ -3,7 +3,7 @@ import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
 import type { IngredientInfo } from "./macros.ts";
 import {
   plausibleQuantity, stripStepNumber,
-  buildPrompt, type Context, type ModelOutput, type ModelRecipe, needsFallback, outIngredients, type PantryRow,
+  buildPrompt, SYSTEM, type Context, type ModelOutput, type ModelRecipe, needsFallback, outIngredients, type PantryRow,
   type RecipeRequest, runPipeline, usesExpiring, validateRecipe,
 } from "./recipes.ts";
 
@@ -64,6 +64,13 @@ Deno.test("prompt: refs, amounts, expiring marks, staples, rules", () => {
   assertStringIncludes(only, "NO ingredients to buy");
   assertStringIncludes(only, "expires tomorrow");
   assertStringIncludes(only, "no limit");
+});
+
+Deno.test("prompt: recently suggested dishes are listed to avoid; none without them", () => {
+  const p = buildPrompt(ctx({}, { avoid_titles: ["Chicken  Stir-Fry", " "] }));
+  assertStringIncludes(p, "RECENTLY SUGGESTED (suggest different dishes)\n- Chicken Stir-Fry");
+  assertEquals(buildPrompt(ctx()).includes("RECENTLY SUGGESTED"), false);
+  assertStringIncludes(SYSTEM, "Garlic is always in cloves");
 });
 
 Deno.test("checks: a good recipe passes", () => {
