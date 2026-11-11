@@ -18,4 +18,10 @@ enum AppConfig {
         }
         return key
     }()
+
+    /// Where shared recipe pages live (F4.2), e.g. https://fridge-share.<account>.workers.dev
+    static let shareBaseURL: URL? = (Bundle.main.object(forInfoDictionaryKey: "ShareBaseURL") as? String)
+        .flatMap(URL.init(string:)).flatMap { $0.host == nil ? nil : $0 }
+
+    static func shareURL(token: String) -> URL? { shareBaseURL?.appendingPathComponent("r").appendingPathComponent(token) }
 }

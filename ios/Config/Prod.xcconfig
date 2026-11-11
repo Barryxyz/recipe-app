@@ -7,3 +7,6 @@
 
 SUPABASE_URL = https:/$()/nvfsptuwvpnlkiqulams.supabase.co
 SUPABASE_KEY = sb_publishable_v6HMeB4A7ls8SXTgWSUkSA_ds71bCPn
+
+// Shared recipe links (F4.1 / F4.2): the Cloudflare Worker in share/.
+SHARE_BASE_URL = https:/$()/fridge-share.workers.dev

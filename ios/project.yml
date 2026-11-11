@@ -41,6 +41,7 @@ targets:
         NSCameraUsageDescription: Fridge uses the camera to photograph your fridge, freezer or pantry so it can list the food inside. Photos aren't stored.
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)
+        ShareBaseURL: $(SHARE_BASE_URL)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.fridge

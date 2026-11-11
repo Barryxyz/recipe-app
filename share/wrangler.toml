@@ -1,0 +1,14 @@
+# F4.2: Cloudflare Worker for shared recipe links (free tier, *.workers.dev).
+# Deploy: npx wrangler deploy (Node 18+, after npx wrangler login). Test: deno test share/test
+# The publishable key is public by design (row-level security protects the data). Never put a
+# secret or service_role key here: this repo is public.
+name = "fridge-share"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+SUPABASE_URL = "https://nvfsptuwvpnlkiqulams.supabase.co"
+SUPABASE_KEY = "sb_publishable_v6HMeB4A7ls8SXTgWSUkSA_ds71bCPn"
+APP_NAME = "Fridge"
+APP_ID = "V2KLBCFV26.com.barryxyz.fridge"

@@ -2,7 +2,7 @@
 # Runs every test in the repo.
 #
 #   ./scripts/test.sh          everything below
-#   ./scripts/test.sh fn       type-check the Edge Functions (deno check)
+#   ./scripts/test.sh fn       Edge Function and share page (Worker) tests (deno)
 #   ./scripts/test.sh db       database tests only (fast, ~10 s)
 #   ./scripts/test.sh ios      iOS unit tests only (simulator)
 #
@@ -37,6 +37,14 @@ run_fn_checks() {
       failed=1
     fi
   done
+  # The shared-recipe page Worker (F4.2) is plain JS, tested with Deno too.
+  if out=$(deno test --quiet share/test 2>&1); then
+    echo "  PASS  share page (Worker) tests"
+  else
+    echo "  FAIL  share page (Worker) tests"
+    printf '%s\n' "$out" | grep -E 'error|FAILED|AssertionError' | head -10 | sed 's/^/        /'
+    failed=1
+  fi
 }
 
 run_db_tests() {

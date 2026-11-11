@@ -7,7 +7,7 @@ enum SavedRecipesAPI {
     private static var app: PostgrestClient { supabase.schema("app") }
 
     static let columns = "id, title, description, servings, prep_min, cook_min, steps, macros_per_serving, " +
-        "macros_total, source, model_version, updated_at, " +
+        "macros_total, source, model_version, updated_at, share_token, " +
         "recipe_ingredients(position, ingredient_id, name, quantity, unit, grams, note, is_optional)"
 
     /// Newest first (updated_at), deleted ones left out.
@@ -64,6 +64,16 @@ enum SavedRecipesAPI {
     static func update(_ id: UUID, _ draft: RecipeEditDraft) async throws {
         struct Params: Encodable { let p_id: UUID; let recipe: RecipeEditDraft.Payload }
         try await app.rpc("update_recipe", params: Params(p_id: id, recipe: draft.payload())).execute()
+    }
+
+    /// The recipe's share token: the existing one, or a new one (F4.1).
+    static func createShareLink(_ id: UUID) async throws -> String {
+        try await app.rpc("create_share_link", params: ["p_recipe_id": id.uuidString]).execute().value
+    }
+
+    /// The old link stops working; sharing again makes a new one.
+    static func stopSharing(_ id: UUID) async throws {
+        try await app.rpc("stop_sharing", params: ["p_recipe_id": id.uuidString]).execute()
     }
 
     /// Server-side macros from catalog data (F2.3).

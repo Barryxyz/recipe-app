@@ -203,6 +203,9 @@ struct RecipesView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(r.title).font(.headline)
+                if r.share_token != nil {
+                    Image(systemName: "link").font(.caption).foregroundStyle(.secondary).accessibilityLabel("Shared")
+                }
                 if let tag = r.tag {
                     Text(tag).font(.caption2.weight(.semibold))
                         .padding(.horizontal, 6).padding(.vertical, 2)

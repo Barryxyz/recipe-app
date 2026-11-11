@@ -26,10 +26,12 @@ struct SavedRecipe: Decodable, Identifiable, Equatable {
     let model_version: String?
     let updated_at: Date
     let ingredients: [Ingredient]
+    /// Set while the recipe is shared (F4.1).
+    var share_token: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, title, description, servings, prep_min, cook_min, steps, macros_per_serving, macros_total
-        case source, model_version, updated_at
+        case source, model_version, updated_at, share_token
         case ingredients = "recipe_ingredients"
     }
 
@@ -48,6 +50,7 @@ struct SavedRecipe: Decodable, Identifiable, Equatable {
         model_version = try c.decodeIfPresent(String.self, forKey: .model_version)
         updated_at = try c.decode(Date.self, forKey: .updated_at)
         ingredients = (try c.decodeIfPresent([Ingredient].self, forKey: .ingredients) ?? []).sorted { $0.position < $1.position }
+        share_token = try c.decodeIfPresent(String.self, forKey: .share_token)
     }
 
     init(id: UUID, title: String, prepMin: Int?, cookMin: Int?, ingredients: [Ingredient], kcal: Double? = nil,
