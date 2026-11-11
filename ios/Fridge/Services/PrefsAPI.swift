@@ -3,17 +3,28 @@ import Supabase
 
 /// Food preferences (F1.7) and the user's expiry defaults (F1.6 Settings screen).
 /// RLS limits everything to the signed-in user.
+@MainActor
 enum PrefsAPI {
     private static var app: PostgrestClient { supabase.schema("app") }
     private static var catalogDB: PostgrestClient { supabase.schema("catalog") }
 
+    /// The device's copy when offline (F3.6).
     static func load(userId: UUID) async throws -> UserPrefs {
-        try await app.from("user_prefs")
-            .select(UserPrefs.columns)
-            .eq("user_id", value: userId)
-            .single()
-            .execute()
-            .value
+        let store = OfflineStore.shared
+        if !Connectivity.shared.isOnline, let cached = store.prefs { return cached }
+        do {
+            let prefs: UserPrefs = try await app.from("user_prefs")
+                .select(UserPrefs.columns)
+                .eq("user_id", value: userId)
+                .single()
+                .execute()
+                .value
+            store.cache(prefs: prefs)
+            return prefs
+        } catch where !(error is PostgrestError) {
+            if let cached = store.prefs { return cached }
+            throw error
+        }
     }
 
     static func save(_ prefs: UserPrefs, userId: UUID) async throws {

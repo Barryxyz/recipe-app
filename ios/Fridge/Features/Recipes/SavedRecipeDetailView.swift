@@ -32,6 +32,7 @@ struct SavedRecipeDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .secondaryAction) {
                     Button { editor = .duplicate } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+                        .needsInternet()
                 }
             }
             .fullScreenCover(item: $editor) { mode in

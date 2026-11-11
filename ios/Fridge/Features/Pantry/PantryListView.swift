@@ -133,6 +133,7 @@ struct PantryListView: View {
                     Button { showScan = true } label: {
                         Label("Scan your fridge", systemImage: "camera").frame(maxWidth: .infinity)
                     }
+                    .needsInternet()
                     Button { showAdd = true } label: {
                         Label("Add manually", systemImage: "plus").frame(maxWidth: .infinity)
                     }
@@ -331,6 +332,7 @@ struct PantryListView: View {
             .accessibilityLabel("Sort")
             Button { showScan = true } label: { Image(systemName: "camera") }
                 .accessibilityLabel("Scan")
+                .needsInternet()
             Button { showAdd = true } label: { Image(systemName: "plus") }
                 .accessibilityLabel("Add items")
         }

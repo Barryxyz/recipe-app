@@ -2,6 +2,7 @@ import Foundation
 import Supabase
 
 /// F3.1 / F3.3: saved recipes. RLS limits everything to the user's own recipes.
+@MainActor
 enum SavedRecipesAPI {
     private static var app: PostgrestClient { supabase.schema("app") }
 
@@ -10,13 +11,28 @@ enum SavedRecipesAPI {
         "recipe_ingredients(position, ingredient_id, name, quantity, unit, grams, note, is_optional)"
 
     /// Newest first (updated_at), deleted ones left out.
+    /// Offline (F3.6): the last list the device saw, read-only.
     static func list() async throws -> [SavedRecipe] {
-        try await app.from("recipes")
-            .select(columns)
-            .is("deleted_at", value: nil)
-            .order("updated_at", ascending: false)
-            .execute()
-            .value
+        let store = OfflineStore.shared
+        if !Connectivity.shared.isOnline, let cached = try? cachedList() { return cached }
+        do {
+            let response = try await app.from("recipes")
+                .select(columns)
+                .is("deleted_at", value: nil)
+                .order("updated_at", ascending: false)
+                .execute()
+            store.cache(recipesJSON: response.data)
+            return try PostgrestClient.Configuration.jsonDecoder.decode([SavedRecipe].self, from: response.data)
+        } catch where !(error is PostgrestError) {
+            if let cached = try? cachedList() { return cached }
+            throw error
+        }
+    }
+
+    /// The device's copy of the saved recipes (nil if there's none yet).
+    static func cachedList() throws -> [SavedRecipe]? {
+        guard let data = OfflineStore.shared.recipesJSON else { return nil }
+        return try PostgrestClient.Configuration.jsonDecoder.decode([SavedRecipe].self, from: data)
     }
 
     /// Ids of recipes that are still saved (not deleted).
@@ -36,7 +52,12 @@ enum SavedRecipesAPI {
     }
 
     static func get(_ id: UUID) async throws -> SavedRecipe {
-        try await app.from("recipes").select(columns).eq("id", value: id).single().execute().value
+        do {
+            return try await app.from("recipes").select(columns).eq("id", value: id).single().execute().value
+        } catch where !(error is PostgrestError) {
+            if let r = (try? cachedList())??.first(where: { $0.id == id }) { return r }
+            throw error
+        }
     }
 
     /// Replaces the recipe's fields and ingredients in one transaction (F3.2).

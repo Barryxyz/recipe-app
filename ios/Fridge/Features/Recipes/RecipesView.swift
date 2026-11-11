@@ -61,6 +61,7 @@ struct RecipesView: View {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button { Task { await startNewRecipe() } } label: { Label("New recipe", systemImage: "square.and.pencil") }
+                            .needsInternet()
                     } label: {
                         Image(systemName: "plus").accessibilityLabel("Add a recipe")
                     }
@@ -323,7 +324,8 @@ struct RecipesView: View {
                 Image(systemName: "sparkles").font(.title)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Get recipe ideas").font(.headline)
-                    Text("From what's in your pantry, using what expires first.")
+                    Text(Connectivity.shared.isOnline ? "From what's in your pantry, using what expires first."
+                                                      : "Needs internet.")
                         .font(.subheadline).foregroundStyle(.white.opacity(0.85))
                         .multilineTextAlignment(.leading)
                 }
@@ -336,6 +338,8 @@ struct RecipesView: View {
         }
         .buttonStyle(.plain)
         .disabled(loading)
+        .needsInternet()
+        .opacity(Connectivity.shared.isOnline ? 1 : 0.6)
     }
 
     private func lastIdeasCard(_ s: RecipeSession) -> some View {

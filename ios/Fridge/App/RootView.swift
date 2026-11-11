@@ -39,23 +39,32 @@ private struct ReadyView: View {
     var body: some View {
         TabView(selection: $tab) {
             PantryListView(user: user)
+                .safeAreaInset(edge: .bottom, spacing: 0) { SyncStatusBar() }
                 .tabItem { AppTabBar.label(.pantry) }
                 .tag(AppTab.pantry)
                 .background(TabBarHeight(extra: AppTabBar.extraHeight))
             RecipesView(user: user)
+                .safeAreaInset(edge: .bottom, spacing: 0) { SyncStatusBar() }
                 .tabItem { AppTabBar.label(.recipes) }
                 .tag(AppTab.recipes)
                 .background(TabBarHeight(extra: AppTabBar.extraHeight))
             ShoppingListView()
+                .safeAreaInset(edge: .bottom, spacing: 0) { SyncStatusBar() }
                 .tabItem { AppTabBar.label(.shopping) }
                 .tag(AppTab.shopping)
                 .badge(ShoppingBadge.shared.count)
                 .background(TabBarHeight(extra: AppTabBar.extraHeight))
         }
-            .task { await ShoppingBadge.shared.refresh() }
+            .task {
+                await OfflineStore.shared.start()       // F3.6: local copy + sync
+                await ShoppingBadge.shared.refresh()
+            }
             // F5.1: rebuild reminders when the app comes back; a tapped reminder opens the pantry.
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { reminders.pantryChanged() }
+                if phase == .active {
+                    Task { await OfflineStore.shared.sync() }
+                    reminders.pantryChanged()
+                }
                 if phase == .background { BackgroundRefresh.schedule(); Events.flush() }
             }
             .onChange(of: reminders.openPantryRequest) { _, _ in tab = .pantry }

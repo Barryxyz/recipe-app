@@ -80,8 +80,8 @@ begin
   if r.ingredient_id is null or r.ingredient_id < 1000000000000 or r.quantity is not null or r.unit <> 'each' then
     failures := array_append(failures, format('free-text item not custom: %s', row_to_json(r)));
   end if;
-  if exists (select 1 from app.shopping_list_items where id in (chicken, herbs)) then
-    failures := array_append(failures, 'moved rows still on the list'::text);
+  if exists (select 1 from app.shopping_list_items where id in (chicken, herbs) and deleted_at is null) then
+    failures := array_append(failures, 'moved rows still on the list (not soft deleted)'::text);
   end if;
 
   begin

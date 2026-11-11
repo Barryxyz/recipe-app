@@ -182,7 +182,10 @@ struct ShoppingListView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Button("Add to pantry (\(bought.count))") { movingToPantry = true }
+                Button(Connectivity.shared.isOnline ? "Add to pantry (\(bought.count))" : "Add to pantry needs internet") {
+                    movingToPantry = true
+                }
+                .needsInternet()
                     .font(.footnote.weight(.semibold))
                     .textCase(nil)
             }

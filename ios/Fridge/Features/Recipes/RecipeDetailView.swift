@@ -96,6 +96,7 @@ struct RecipeDetailView: View {
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
                 }
                 .buttonStyle(.borderedProminent)
+                .needsInternet()
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
 
@@ -113,7 +114,7 @@ struct RecipeDetailView: View {
                     .listRowBackground(Color.clear)
                 }
             } footer: {
-                Text("Takes what you used out of your pantry.")
+                Text(Connectivity.shared.isOnline ? "Takes what you used out of your pantry." : "Cooked this needs internet.")
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -131,7 +132,7 @@ struct RecipeDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let onEdit {
-                ToolbarItem(placement: .primaryAction) { Button("Edit", action: onEdit) }
+                ToolbarItem(placement: .primaryAction) { Button("Edit", action: onEdit).needsInternet() }
             }
             if let onSave, let onUnsave {
                 ToolbarItem(placement: .primaryAction) {

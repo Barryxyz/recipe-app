@@ -2,6 +2,7 @@ import Foundation
 import Supabase
 
 /// F3.4: apply "Cooked this" to the pantry in one transaction, and undo it.
+@MainActor
 enum CookedAPI {
     private static var app: PostgrestClient { supabase.schema("app") }
 
@@ -14,6 +15,7 @@ enum CookedAPI {
 
     static func apply(_ changes: [CookedThis.Change]) async throws -> [Snapshot] {
         struct Params: Encodable { let changes: [CookedThis.Change] }
+        await OfflineStore.shared.sync()          // send pending pantry edits first (F3.6)
         let snapshot: [Snapshot] = try await app.rpc("apply_cooked", params: Params(changes: changes)).execute().value
         await ExpiryReminders.shared.pantryChanged()
         return snapshot

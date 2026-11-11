@@ -83,6 +83,7 @@ final class ExpiryReminders: NSObject {
     /// The pantry changed (or the app came back): rebuild the digests from fresh data, once
     /// even if several changes come in at the same time.
     func pantryChanged() {
+        OfflineStore.shared.markStale()          // the server may have changed rows (F3.6)
         pending?.cancel()
         pending = Task {
             try? await Task.sleep(for: .milliseconds(800))

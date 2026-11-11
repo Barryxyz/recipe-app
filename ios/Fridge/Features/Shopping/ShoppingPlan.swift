@@ -11,16 +11,20 @@ struct ShoppingItem: Codable, Identifiable, Equatable {
     var sourceRecipeTitle: String?
     var checked: Bool
     var createdAt: Date
+    /// For offline sync (F3.6).
+    var updatedAt: Date? = nil
+    var deletedAt: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, quantity, unit, checked
+        case updatedAt = "updated_at", deletedAt = "deleted_at"
         case ingredientId = "ingredient_id"
         case sourceRecipeId = "source_recipe_id"
         case sourceRecipeTitle = "source_recipe_title"
         case createdAt = "created_at"
     }
 
-    static let columns = "id, ingredient_id, name, quantity, unit, source_recipe_id, source_recipe_title, checked, created_at"
+    static let columns = "id, ingredient_id, name, quantity, unit, source_recipe_id, source_recipe_title, checked, created_at, updated_at, deleted_at"
 }
 
 /// F3.5: what a recipe still needs, how it merges into the list, and the store-aisle order.
