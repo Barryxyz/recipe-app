@@ -102,7 +102,8 @@ export function recipePage(r, { url, image, appName = "Fridge" } = {}) {
     : "";
   const steps = (r.steps ?? []).map((s) => `<li>${esc(String(s).replace(STEP_NUMBER, ""))}</li>`).join("");
   const ingredients = (r.ingredients ?? []).map((i) => `<li>${esc(ingredientLine(i))}</li>`).join("");
-  const description = r.description || `A recipe shared from ${appName}.`;
+  // No app name on the page until the name is final (2026-11-13).
+  const description = r.description || "A shared recipe.";
   const body = `
 <h1>${esc(r.title)}</h1>
 ${r.description ? `<p class="desc">${esc(r.description)}</p>` : ""}
@@ -113,7 +114,6 @@ ${macros}
 <footer>
   <p>${r.is_ai ? esc(SAFETY) : "Shared by its author."}</p>
   <p>${esc(ALLERGENS)}</p>
-  <p>Made with ${esc(appName)}.</p>
 </footer>`;
   return page({ title: r.title, description, url, body, image });
 }
@@ -123,7 +123,6 @@ export function notFoundPage(appName = "Fridge") {
     title: "Recipe not found",
     description: "This recipe is no longer shared.",
     body: `<div class="empty"><h1>This recipe is no longer shared.</h1>
-<p class="desc">The link may have been turned off by the person who shared it.</p>
-<p class="note">${esc(appName)}</p></div>`,
+<p class="desc">The link may have been turned off by the person who shared it.</p></div>`,
   });
 }

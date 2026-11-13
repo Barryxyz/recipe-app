@@ -34,6 +34,7 @@ Deno.test("a shared recipe renders in full, escaped, with the disclaimers", asyn
   assertStringIncludes(body, "AI-generated recipe");
   assertStringIncludes(body, "hidden allergens");
   assert(!body.includes("<script"), "no JavaScript");
+  assert(!body.includes("Fridge"), "no app name on the page until the name is final");
 });
 
 Deno.test("own recipes say 'Shared by its author' instead of the AI line", () => {
@@ -45,7 +46,9 @@ Deno.test("own recipes say 'Shared by its author' instead of the AI line", () =>
 Deno.test("unknown, revoked or malformed tokens get the 404 page without asking Supabase for bad ones", async () => {
   const revoked = await handle(new Request(`https://s.example/r/${token}`), ENV, fakeFetch(null));
   assertEquals(revoked.status, 404);
-  assertStringIncludes(await revoked.text(), "This recipe is no longer shared.");
+  const notFound = await revoked.text();
+  assertStringIncludes(notFound, "This recipe is no longer shared.");
+  assert(!notFound.includes("Fridge"));
   let called = false;
   const bad = await handle(new Request("https://s.example/r/short"), ENV, async () => { called = true; return new Response("null"); });
   assertEquals(bad.status, 404);
