@@ -262,6 +262,8 @@ struct RecipeResultsView: View {
         } actions: {
             switch error {
             case .limitReached, .aiDisabled: EmptyView()
+            case .subscriptionRequired:
+                Button("See plans") { SubscriptionStore.shared.showPaywall = true }.buttonStyle(.borderedProminent)
             default: Button("Retry") { run(current ?? request) }.buttonStyle(.borderedProminent)
             }
             Button("Change options") { onChangeOptions(current ?? request) }
@@ -271,6 +273,7 @@ struct RecipeResultsView: View {
     private func errorTitle(_ e: RecipeAPI.RecipeError) -> String {
         switch e {
         case .limitReached: "Limit reached"
+        case .subscriptionRequired: "Subscription needed"
         case .offline: "You're offline"
         default: "Couldn't get recipes"
         }

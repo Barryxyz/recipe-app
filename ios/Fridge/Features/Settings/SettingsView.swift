@@ -18,6 +18,15 @@ struct SettingsView: View {
                 }
                 ExpiryRemindersSection()
 
+                Section {
+                    Button { SubscriptionStore.shared.showPaywall = true } label: {
+                        LabeledContent {
+                            Text(SubscriptionStore.shared.status?.active == true ? "Active" : "Not subscribed")
+                        } label: { Label("Subscription", systemImage: "sparkles") }
+                    }
+                    .foregroundStyle(.primary)
+                }
+
                 Section("About") {
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
                     LabeledContent("Account", value: "Anonymous")

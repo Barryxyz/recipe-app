@@ -448,3 +448,17 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/generate-recipes/deno.json"
 entrypoint = "./functions/generate-recipes/index.ts"
+
+# F0.6: records a verified subscription for the signed-in user (JWT checked in code).
+[functions.verify-subscription]
+enabled = true
+verify_jwt = false
+import_map = "./functions/verify-subscription/deno.json"
+entrypoint = "./functions/verify-subscription/index.ts"
+
+# F0.6: Apple calls this directly (no user JWT); the signed payload is verified in code.
+[functions.appstore-notifications]
+enabled = true
+verify_jwt = false
+import_map = "./functions/appstore-notifications/deno.json"
+entrypoint = "./functions/appstore-notifications/index.ts"

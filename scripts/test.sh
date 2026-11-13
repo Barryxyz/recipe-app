@@ -19,7 +19,7 @@ failed=0
 
 run_fn_checks() {
   command -v deno >/dev/null || { echo "  FAIL  deno is not installed"; failed=1; return; }
-  if out=$(deno test --quiet supabase/functions/_shared/ 2>&1); then
+  if out=$(deno test --quiet --allow-env supabase/functions/_shared/ 2>&1); then
     echo "  PASS  _shared unit tests"
   else
     echo "  FAIL  _shared unit tests"

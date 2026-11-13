@@ -80,6 +80,8 @@ enum RecipeAPI {
         case offline
         case aiDisabled
         case limitReached(String)
+        /// No active subscription (F0.6): the paywall opens.
+        case subscriptionRequired
         /// The model couldn't make recipes that pass the checks: show the fixes.
         case noGoodRecipes
         case failed(String)
@@ -89,6 +91,7 @@ enum RecipeAPI {
             case .offline: "Recipe ideas need an internet connection."
             case .aiDisabled: "Recipe ideas are temporarily unavailable."
             case .limitReached(let message): message
+            case .subscriptionRequired: "Recipe ideas are part of the subscription."
             case .noGoodRecipes: "Couldn't come up with good recipes."
             case .failed: "Something went wrong. Try again."
             }
@@ -125,6 +128,9 @@ enum RecipeAPI {
         let envelope = try? JSONDecoder().decode(Envelope.self, from: data)
         switch envelope?.error.code {
         case "limit_reached": return .limitReached(envelope?.error.message ?? "You've used your recipe requests for now.")
+        case "subscription_required":
+            Task { @MainActor in SubscriptionStore.shared.showPaywall = true }
+            return .subscriptionRequired
         case "ai_disabled": return .aiDisabled
         case "validation_failed": return .noGoodRecipes
         default:

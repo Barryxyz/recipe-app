@@ -1,5 +1,5 @@
 // F0.5: common request handling for AI Edge Functions.
-// - Signed-in users only (401), bodies up to 10 MB (413), verified purchase (402, F0.6),
+// - Signed-in users only (401), bodies up to 10 MB (413), active subscription (402, F0.6),
 //   kill switch (503).
 // - One error shape: { error: { code, message } }.
 // - Never logs request bodies, so photos never reach the logs (DESIGN §4).
@@ -11,7 +11,7 @@ export const MAX_BODY_BYTES = 10 * 1024 * 1024;
 
 export type ErrorCode =
   | "unauthorized"
-  | "purchase_required"
+  | "subscription_required"
   | "bad_request"
   | "payload_too_large"
   | "ai_disabled"
@@ -23,7 +23,7 @@ export type ErrorCode =
 
 const STATUS: Record<ErrorCode, number> = {
   unauthorized: 401,
-  purchase_required: 402,
+  subscription_required: 402,
   bad_request: 400,
   payload_too_large: 413,
   ai_disabled: 503,
@@ -76,9 +76,15 @@ export function aiEndpoint(
 export async function hasAiAccess(userId: string, supabaseAdmin: SupabaseClient): Promise<boolean> {
   if (!aiEnabled()) return false;
   if (!purchaseRequired()) return true;
-  const { data } = await supabaseAdmin.schema("app").from("users")
-    .select("purchase_verified_at").eq("id", userId).maybeSingle();
-  return Boolean(data?.purchase_verified_at);
+  return await hasSubscription(userId, supabaseAdmin);
+}
+
+/** An active subscription: expiry (with Apple's grace period) still in the future (F0.6). */
+export async function hasSubscription(userId: string, supabaseAdmin: SupabaseClient, now = new Date()): Promise<boolean> {
+  const { data, error } = await supabaseAdmin.schema("app").from("users")
+    .select("subscription_expires_at").eq("id", userId).maybeSingle();
+  if (error || !data?.subscription_expires_at) return false;
+  return new Date(data.subscription_expires_at).getTime() > now.getTime();
 }
 
 /**
@@ -118,12 +124,8 @@ export function endpoint(
       }
     }
 
-    if (opts.ai && purchaseRequired()) {
-      const { data: user, error } = await sb.supabaseAdmin
-        .schema("app").from("users").select("purchase_verified_at").eq("id", userId).maybeSingle();
-      if (error || !user?.purchase_verified_at) {
-        return errorResponse("purchase_required", "A verified App Store purchase is required.");
-      }
+    if (opts.ai && purchaseRequired() && !(await hasSubscription(userId, sb.supabaseAdmin))) {
+      return errorResponse("subscription_required", "An active subscription is required for this feature.");
     }
 
     const started = Date.now();

@@ -58,6 +58,7 @@ private struct ReadyView: View {
             .task {
                 await OfflineStore.shared.start()       // F3.6: local copy + sync
                 await ShoppingBadge.shared.refresh()
+                await SubscriptionStore.shared.start()  // F0.6
             }
             // F5.1: rebuild reminders when the app comes back; a tapped reminder opens the pantry.
             .onChange(of: scenePhase) { _, phase in
@@ -68,6 +69,8 @@ private struct ReadyView: View {
                 if phase == .background { BackgroundRefresh.schedule(); Events.flush() }
             }
             .onChange(of: reminders.openPantryRequest) { _, _ in tab = .pantry }
+            .sheet(isPresented: Binding(get: { SubscriptionStore.shared.showPaywall },
+                                        set: { SubscriptionStore.shared.showPaywall = $0 })) { PaywallView() }
             .alert("Get a heads-up before food expires?", isPresented: Binding(
                 get: { reminders.offerPrompt }, set: { reminders.offerPrompt = $0 })) {
                 Button("Turn on") { Task { await reminders.turnOn() } }

@@ -50,8 +50,8 @@ begin
   if n <> 1 then failures := array_append(failures, 'A cannot see own pantry item'::text); end if;
 
   begin
-    update app.users set purchase_verified_at = now() where id = a;
-    failures := array_append(failures, 'A could mark itself purchase-verified'::text);
+    update app.users set subscription_expires_at = now() + interval '1 year' where id = a;
+    failures := array_append(failures, 'A could give itself a subscription'::text);
   exception when insufficient_privilege then null;
   end;
 

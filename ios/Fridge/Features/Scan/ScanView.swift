@@ -213,9 +213,13 @@ struct ScanView: View {
             case .offline: Text("You can add items by hand instead.")
             case .aiDisabled: Text("AI features are temporarily unavailable. You can add items by hand.")
             case .limitReached(let message): Text(message)
+            case .subscriptionRequired: Text("Subscribe to scan your shelves. You can still add items by hand.")
             case .failed: Text("Your photos are still here. Try again, or add items by hand.")
             }
         } actions: {
+            if error == .subscriptionRequired {
+                Button("See plans") { SubscriptionStore.shared.showPaywall = true }.buttonStyle(.borderedProminent)
+            }
             if case .failed = error {
                 Button("Retry") { send() }.buttonStyle(.borderedProminent)
             } else if error == .offline {

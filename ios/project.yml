@@ -59,6 +59,9 @@ targets:
       # Shared with the SQL tests (F1.6): both implementations run the same cases.
       - path: ../supabase/tests/expiry_cases.json
         buildPhase: resources
+      # F0.6: local StoreKit products for the subscription tests (no App Store needed).
+      - path: FridgeTests/StoreKit/Subscriptions.storekit
+        buildPhase: resources
     dependencies:
       - target: Fridge
       - package: Supabase

@@ -53,6 +53,8 @@ enum ScanAPI {
         case offline
         case aiDisabled
         case limitReached(String)
+        /// No active subscription (F0.6): the paywall opens.
+        case subscriptionRequired
         case failed(String)
 
         var errorDescription: String? {
@@ -60,6 +62,7 @@ enum ScanAPI {
             case .offline: "Scanning needs an internet connection."
             case .aiDisabled: "Scanning is temporarily unavailable."
             case .limitReached: "Scan limit reached"
+            case .subscriptionRequired: "Scanning is part of the subscription."
             case .failed: "Couldn't read the photos."
             }
         }
@@ -127,6 +130,10 @@ enum ScanAPI {
         let serverCode = envelope?.error.code
         if serverCode == "limit_reached" || code == 429 {
             return .limitReached(envelope?.error.message ?? "You've used your scans for now. You can still add items manually.")
+        }
+        if serverCode == "subscription_required" || code == 402 {
+            Task { @MainActor in SubscriptionStore.shared.showPaywall = true }
+            return .subscriptionRequired
         }
         if serverCode == "ai_disabled" || code == 503 { return .aiDisabled }
         return .failed(serverCode ?? "http \(code)")
