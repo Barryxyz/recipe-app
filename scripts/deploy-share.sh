@@ -7,6 +7,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../share"
 [ -x "$HOME/.local/node22/bin/node" ] && export PATH="$HOME/.local/node22/bin:$PATH"
 WRANGLER="npx --yes wrangler@4.156.0"
-if [ "${1:-}" = login ]; then exec $WRANGLER login; fi
+case "${1:-}" in
+  login) exec $WRANGLER login ;;
+  "") ;;
+  *) echo "Unknown option: $1 (use 'login', or nothing to deploy)"; exit 1 ;;
+esac
 deno test --quiet test
 $WRANGLER deploy
