@@ -71,6 +71,7 @@ struct SavedRecipe: Decodable, Identifiable, Equatable {
         switch source {
         case "edited": "Edited"
         case "manual": "Mine"
+        case "shared": "Shared"
         default: nil
         }
     }

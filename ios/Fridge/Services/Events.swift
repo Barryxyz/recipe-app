@@ -19,6 +19,7 @@ enum Events {
         case cookedThis = "cooked_this"
         case shoppingItemsAdded = "shopping_items_added"
         case shareCreated = "share_created"
+        case sharedRecipeOpened = "shared_recipe_opened"
     }
 
     private struct Row: Encodable {

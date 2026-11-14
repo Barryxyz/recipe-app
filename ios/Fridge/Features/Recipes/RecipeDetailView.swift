@@ -15,6 +15,8 @@ struct RecipeDetailView: View {
     var isAIRecipe = true
     /// Blank prep / cook times show "—" (F3.7).
     var timesKnown: (prep: Bool, cook: Bool) = (true, true)
+    /// A label above the title, e.g. "Shared recipe" (F4.3).
+    var banner: String? = nil
 
     enum MacroStatus {
         case updating
@@ -38,6 +40,10 @@ struct RecipeDetailView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
+                    if let banner {
+                        Label(banner, systemImage: "link").font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
                     Text(recipe.title).font(.title2.bold())
                     Text(recipe.description).foregroundStyle(.secondary)
                     HStack(spacing: 0) {

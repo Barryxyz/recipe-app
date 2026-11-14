@@ -19,6 +19,8 @@ struct RootView: View {
         }
         .task { await session.start() }
         .task { await session.observeAuthChanges() }
+        // F4.3: a share link; shown once signed in and past onboarding.
+        .onOpenURL { SharedLinkRouter.shared.open($0) }
     }
 }
 
@@ -26,6 +28,9 @@ struct RootView: View {
 private struct ReadyView: View {
     let user: AppUser
     @State private var showOnboarding = false
+    /// Onboarding has been decided (shown or skipped), so a pending share link can open.
+    @State private var onboardingChecked = false
+    private var links = SharedLinkRouter.shared
 
     @State private var tab: AppTab = .pantry
     @Environment(\.scenePhase) private var scenePhase
@@ -81,7 +86,12 @@ private struct ReadyView: View {
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }
             }
+            .sheet(item: Binding(get: { onboardingChecked && !showOnboarding ? links.pending.map(PendingLink.init) : nil },
+                                 set: { if $0 == nil { links.pending = nil } })) { link in
+                SharedRecipeView(token: link.token) { links.pending = nil }
+            }
             .task(id: user.id) {
+                defer { onboardingChecked = true }
                 guard !OnboardingState.isDone(for: user.id) else { return }
                 // A reinstall with saved preferences skips onboarding.
                 if let prefs = try? await PrefsAPI.load(userId: user.id), OnboardingState.prefsLookConfigured(prefs) {
@@ -91,6 +101,11 @@ private struct ReadyView: View {
                 }
             }
     }
+}
+
+private struct PendingLink: Identifiable {
+    let token: String
+    var id: String { token }
 }
 
 enum AppTab: CaseIterable {

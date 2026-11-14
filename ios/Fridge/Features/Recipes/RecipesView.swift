@@ -73,6 +73,9 @@ struct RecipesView: View {
                                  onCancel: { newRecipe = nil })
             }
             .refreshable { await loadSaved() }
+            .onReceive(NotificationCenter.default.publisher(for: .savedRecipesChanged)) { _ in
+                Task { await loadSaved() }
+            }
             .onAppear {
                 // Also runs when coming back from a recipe, so unsaved ones disappear.
                 lastSession = RecipeSession.load()

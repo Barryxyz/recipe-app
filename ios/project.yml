@@ -42,6 +42,11 @@ targets:
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)
         ShareBaseURL: $(SHARE_BASE_URL)
+        # F4.3: opens share links on builds without Universal Links (testing).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.barryxyz.fridge.share
+            CFBundleURLSchemes:
+              - com.barryxyz.fridge
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.fridge
