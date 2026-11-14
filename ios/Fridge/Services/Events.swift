@@ -44,6 +44,9 @@ enum Events {
     }
 
     /// Sends what's buffered (also when the app goes to the background).
+    /// Delete account: events not sent yet are dropped.
+    static func discardPending() { buffer = [] }
+
     static func flush() {
         flushTask?.cancel()
         flushTask = nil

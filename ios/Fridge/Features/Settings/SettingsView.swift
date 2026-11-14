@@ -28,6 +28,7 @@ struct SettingsView: View {
                 }
 
                 PrivacySection()
+                DeleteAccountSection()
 
                 Section("About") {
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
@@ -216,5 +217,42 @@ struct PrivacySection: View {
         } footer: {
             Text("Scanning, recipe ideas and nutrition estimates send photos, your pantry and preferences to Anthropic's AI. Photos aren't stored. Turned off, those features ask first.")
         }
+    }
+}
+
+/// F5.3: Delete account, with a confirmation that says what goes and what doesn't.
+struct DeleteAccountSection: View {
+    @State private var confirming = false
+    @State private var deleting = false
+    @State private var error: String?
+
+    var body: some View {
+        Section {
+            Button(role: .destructive) { confirming = true } label: {
+                HStack {
+                    Label("Delete account", systemImage: "trash")
+                    if deleting { Spacer(); ProgressView() }
+                }
+            }
+            .disabled(deleting)
+            .needsInternet()
+        } footer: {
+            Text("Permanently deletes your pantry, recipes, shopping list and preferences, and turns off your shared links.")
+        }
+        .confirmationDialog("Delete your account?", isPresented: $confirming, titleVisibility: .visible) {
+            Button("Delete everything", role: .destructive) { Task { await delete() } }
+        } message: {
+            Text("Your pantry, saved recipes, shopping list, preferences and shared links are deleted straight away. This can't be undone.\n\nA subscription isn't cancelled: cancel it in Settings → Apple ID → Subscriptions.")
+        }
+        .alert("Couldn't delete your account", isPresented: .constant(error != nil)) {
+            Button("OK") { error = nil }
+        } message: { Text(error ?? "") }
+    }
+
+    private func delete() async {
+        deleting = true
+        defer { deleting = false }
+        do { try await AccountDeletion.deleteEverything() }
+        catch { self.error = "Nothing was deleted. Check your connection and try again." }
     }
 }
