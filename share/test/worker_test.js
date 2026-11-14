@@ -75,3 +75,18 @@ Deno.test("helpers", () => {
   assertEquals(amount(2, "each"), "2");
   assertEquals(amount(0.3, "kg"), "0.3 kg");
 });
+
+Deno.test("the privacy policy is served, indexable, with the contact address and no app name", async () => {
+  const res = await handle(new Request("https://x.workers.dev/privacy"), ENV, () => {
+    throw new Error("no Supabase call for /privacy");
+  });
+  assertEquals(res.status, 200);
+  assertEquals(res.headers.get("x-robots-tag"), null);
+  const body = await res.text();
+  assertStringIncludes(body, "<h1>Privacy policy</h1>");
+  assertStringIncludes(body, "mailto:fridgefoodscanner@gmail.com");
+  assertStringIncludes(body, "Photos aren't stored");
+  assertStringIncludes(body, "Settings → Delete account");
+  assertEquals(body.includes("noindex"), false);
+  assertEquals(/\bFridge\b/.test(body), false);
+});

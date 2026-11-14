@@ -64,15 +64,16 @@ ul { padding-left: 20px; margin: 0; } li { margin: 4px 0; }
 ol { padding-left: 24px; margin: 0; } ol li { margin: 0 0 12px; } ol li::marker { color: var(--accent); font-weight: 700; }
 .note { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
 footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+a { color: var(--accent); }
 .empty { text-align: center; padding-top: 20vh; } .empty h1 { font-size: 24px; }
 `;
 
-function page({ title, description, url, body, image }) {
+export function page({ title, description, url, body, image, index = false }) {
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
+${index ? "" : `<meta name="robots" content="noindex, nofollow">`}
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <meta property="og:type" content="article">

@@ -2,18 +2,20 @@
 //   GET /r/<token>  the recipe page (public.get_shared_recipe through the Supabase REST API with
 //                   the publishable key), or a 404 page; cached for 60 s so revoking applies fast
 //   GET /.well-known/apple-app-site-association  for links that open the app (F4.3)
+//   GET /privacy    the privacy policy (F5.3)
 //   anything else   404
-import { notFoundPage, recipePage } from "./render.js";
+import { notFoundPage, page, recipePage } from "./render.js";
+import { privacyBody } from "./privacy.js";
 
 const TOKEN = /^\/r\/([0-9A-Za-z]{22})\/?$/;
 
-function html(body, status) {
+function html(body, status, { maxAge = 60, index = false } = {}) {
   return new Response(body, {
     status,
     headers: {
       "content-type": "text/html; charset=utf-8",
-      "cache-control": "public, max-age=60",
-      "x-robots-tag": "noindex, nofollow",
+      "cache-control": `public, max-age=${maxAge}`,
+      ...(index ? {} : { "x-robots-tag": "noindex, nofollow" }),
       "x-content-type-options": "nosniff",
       "referrer-policy": "no-referrer",
       "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; img-src https:; base-uri 'none'; form-action 'none'",
@@ -39,6 +41,11 @@ export async function handle(request, env, fetchImpl = fetch) {
     return new Response(JSON.stringify({
       applinks: { details: [{ appIDs: [env.APP_ID], components: [{ "/": "/r/*" }] }] },
     }), { headers: { "content-type": "application/json", "cache-control": "public, max-age=3600" } });
+  }
+
+  if (url.pathname === "/privacy" || url.pathname === "/privacy/") {
+    const body = page({ title: "Privacy policy", description: "What the app stores and how to delete it.", body: privacyBody(), index: true });
+    return html(body, 200, { maxAge: 3600, index: true });
   }
 
   const m = url.pathname.match(TOKEN);
