@@ -52,10 +52,13 @@ struct PaywallView: View {
                         Text(message).font(.footnote).foregroundStyle(.orange)
                     }
 
-                    HStack {
+                    VStack(alignment: .leading, spacing: 10) {
                         Button("Restore purchases") { Task { await store.restore() } }.disabled(store.busy)
-                        Spacer()
-                        Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                        // App Review: subscription screens link the terms and the privacy policy.
+                        HStack(spacing: 16) {
+                            Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                            if let privacy = AppConfig.privacyURL { Link("Privacy Policy", destination: privacy) }
+                        }
                     }
                     .font(.footnote)
                 }
