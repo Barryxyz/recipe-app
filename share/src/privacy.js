@@ -64,7 +64,8 @@ You can stop sharing at any time and the link stops working.</p>
 <p>In the app, go to <b>Settings → Delete account</b>. This permanently deletes your account and
 everything in it straight away, and any shared links stop working. Deleting the app alone doesn't
 delete your account. A subscription isn't cancelled by deleting your account: cancel it in your
-iPhone's Settings → Apple ID → Subscriptions.</p>
+iPhone's Settings → Apple ID → Subscriptions. If you're subscribed, we keep only Apple's transaction id
+for that subscription (nothing else), so it can move to a new account if you keep using the app.</p>
 <p>You can also email us to ask for your data to be deleted or for a copy of it.</p>
 
 <h2>Children</h2>

@@ -222,6 +222,8 @@ struct PrivacySection: View {
 
 /// F5.3: Delete account, with a confirmation that says what goes and what doesn't.
 struct DeleteAccountSection: View {
+    @State private var subscriptions = SubscriptionStore.shared
+    @State private var manage = false
     @State private var confirming = false
     @State private var deleting = false
     @State private var error: String?
@@ -240,13 +242,32 @@ struct DeleteAccountSection: View {
             Text("Permanently deletes your pantry, recipes, shopping list and preferences, and turns off your shared links.")
         }
         .confirmationDialog("Delete your account?", isPresented: $confirming, titleVisibility: .visible) {
+            if subscribedUntil != nil {
+                Button("Manage subscription") { manage = true }
+            }
             Button("Delete everything", role: .destructive) { Task { await delete() } }
         } message: {
-            Text("Your pantry, saved recipes, shopping list, preferences and shared links are deleted straight away. This can't be undone.\n\nA subscription isn't cancelled: cancel it in Settings → Apple ID → Subscriptions.")
+            Text(Self.message(subscribedUntil: subscribedUntil))
         }
+        .manageSubscriptionsSheet(isPresented: $manage)
         .alert("Couldn't delete your account", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
+    }
+
+    /// The renewal date while the subscription is active (F0.6).
+    private var subscribedUntil: Date? {
+        guard let s = subscriptions.status, s.active else { return nil }
+        return s.expires_at ?? .distantFuture
+    }
+
+    static func message(subscribedUntil: Date?) -> String {
+        let data = "Your pantry, saved recipes, shopping list, preferences and shared links are deleted straight away. This can't be undone."
+        guard let until = subscribedUntil else {
+            return data + "\n\nIf you subscribed, deleting your account doesn't cancel it: cancel in Settings → Apple ID → Subscriptions."
+        }
+        let date = until == .distantFuture ? "" : " (renews or ends \(until.formatted(date: .long, time: .omitted)))"
+        return data + "\n\nYou're subscribed\(date). Deleting your account doesn't cancel it: Apple keeps billing your Apple ID until you cancel. Tap Manage subscription to cancel first. If you keep it, it moves to your new account the next time you open the app."
     }
 
     private func delete() async {

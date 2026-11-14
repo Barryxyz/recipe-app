@@ -17,6 +17,7 @@ enum AccountDeletion {
         ExpiryReminders.shared.enabled = false
         AIConsent.shared.granted = false
         SharedLinkRouter.shared.pending = nil
+        SubscriptionStore.shared.reset()
         if let domain = Bundle.main.bundleIdentifier { UserDefaults.standard.removePersistentDomain(forName: domain) }
         try? await supabase.auth.signOut(scope: .local)
     }

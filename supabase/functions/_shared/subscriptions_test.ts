@@ -26,6 +26,16 @@ Deno.test("another account's transaction, unknown products and non-subscriptions
   assertThrows(() => accessFrom(tx({ type: "Consumable" }), USER), SubscriptionError, "not a subscription");
 });
 
+Deno.test("a subscription moved after Delete account is accepted for the new account only when marked transferred", () => {
+  const old = "00000000-0000-4000-8000-000000000000";
+  assertThrows(() => accessFrom(tx({ appAccountToken: old }), USER), SubscriptionError, "another account");
+  const a = accessFrom(tx({ appAccountToken: old }), USER, undefined, { transferred: true });
+  assertEquals(a.originalTransactionId, "2000000123");
+  // The other checks still apply.
+  assertThrows(() => accessFrom(tx({ productId: "com.other.app.yearly" }), USER, undefined, { transferred: true }),
+    SubscriptionError, "unknown product");
+});
+
 Deno.test("refunds end access at the revocation date; the grace period extends it", () => {
   assertEquals(accessFrom(tx({ revocationDate: NOW + 1000 }), USER).expiresAt.getTime(), NOW + 1000);
   const grace = NOW + 400 * 86400e3;

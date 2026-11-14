@@ -5,7 +5,7 @@
 // retrying; 400 for anything that doesn't verify.
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
-import { accessFrom, claimedEnvironment, store, SubscriptionError, verifierFor } from "../_shared/subscriptions.ts";
+import { accessFrom, claimedEnvironment, ownerOf, store, SubscriptionError, verifierFor } from "../_shared/subscriptions.ts";
 
 const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ fn: "appstore-notifications", ...o }));
 
@@ -35,13 +35,10 @@ Deno.serve(async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
       auth: { persistSession: false },
     });
-    // The account: appAccountToken is the user id (set at purchase); else the stored original transaction.
-    let userId = tx.appAccountToken?.toLowerCase();
-    if (!userId && tx.originalTransactionId) {
-      const { data } = await admin.schema("app").from("users").select("id")
-        .eq("original_transaction_id", tx.originalTransactionId).maybeSingle();
-      userId = data?.id;
-    }
+    // The account: the one that holds this subscription now (it may have moved after Delete
+    // account); else appAccountToken, the user id set at purchase.
+    const userId = (tx.originalTransactionId ? await ownerOf(admin, tx.originalTransactionId) : undefined)
+      ?? tx.appAccountToken?.toLowerCase();
     if (!userId) {
       log({ stage: "no_account", type });
       return new Response("ok");

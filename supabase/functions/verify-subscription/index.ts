@@ -6,7 +6,10 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { z } from "npm:zod@4.6.7";
 import { endpoint, HttpError } from "../_shared/http.ts";
-import { accessFrom, claimedEnvironment, status, store, SubscriptionError, verifierFor } from "../_shared/subscriptions.ts";
+import {
+  type Access, accessFrom, ANOTHER_ACCOUNT, claim, claimedEnvironment, forgetReleased, status, store, SubscriptionError,
+  verifierFor,
+} from "../_shared/subscriptions.ts";
 
 const Body = z.object({ signed_transaction: z.string().min(20).max(20_000) });
 
@@ -17,10 +20,22 @@ export default {
     const jws = parsed.data.signed_transaction;
     try {
       const tx = await verifierFor(claimedEnvironment(jws)).verifyAndDecodeTransaction(jws);
-      const access = accessFrom(tx, userId);
+      let access: Access;
+      let claimed: "owned" | "released" | null = null;
+      try {
+        access = accessFrom(tx, userId);
+      } catch (e) {
+        // Bought on an account that was deleted since (Delete account keeps the subscription
+        // claimable once), or already moved to this account.
+        if (!(e instanceof SubscriptionError && e.reason === ANOTHER_ACCOUNT) || !tx.originalTransactionId) throw e;
+        claimed = await claim(supabaseAdmin, userId, tx.originalTransactionId);
+        if (!claimed) throw e;
+        access = accessFrom(tx, userId, undefined, { transferred: true });
+      }
       if (!(await store(supabaseAdmin, userId, access))) {
         throw new HttpError("bad_request", "This subscription belongs to another account.");
       }
+      if (claimed === "released") await forgetReleased(supabaseAdmin, access.originalTransactionId);
     } catch (e) {
       if (e instanceof HttpError) throw e;
       const reason = e instanceof SubscriptionError ? e.reason : `verification failed (${(e as Error)?.message ?? e})`;

@@ -12,9 +12,13 @@ declare
   failures text[] := '{}';
   hh_a uuid; hh_b uuid;
   rid uuid; token text;
+  c uuid := gen_random_uuid();
 begin
   insert into auth.users (id, aud, role) values (a, 'authenticated', 'authenticated'),
-                                                (b, 'authenticated', 'authenticated');
+                                                (b, 'authenticated', 'authenticated'),
+                                                (c, 'authenticated', 'authenticated');
+  update app.users set original_transaction_id = 'test-otid-' || a, subscription_expires_at = now() + interval '30 days'
+   where id = a;
   select household_id into hh_a from app.users where id = a;
   select household_id into hh_b from app.users where id = b;
   if hh_a is null or hh_b is null then failures := array_append(failures, 'signup trigger made no household'::text); end if;
@@ -55,6 +59,25 @@ begin
   if exists (select 1 from app.events where user_id = a) then failures := array_append(failures, 'events left'::text); end if;
   if exists (select 1 from app.user_prefs where user_id = a) then failures := array_append(failures, 'prefs left'::text); end if;
   if public.get_shared_recipe(token) is not null then failures := array_append(failures, 'share link still works'::text); end if;
+
+  if not exists (select 1 from app.released_subscriptions where original_transaction_id = 'test-otid-' || a) then
+    failures := array_append(failures, 'subscription not released'::text);
+  end if;
+
+  -- Clients can't see or add released subscriptions.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  begin
+    perform 1 from app.released_subscriptions limit 1;
+    failures := array_append(failures, 'a client can read released subscriptions'::text);
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into app.released_subscriptions values ('x');
+    failures := array_append(failures, 'a client can release a subscription'::text);
+  exception when insufficient_privilege then null;
+  end;
+  perform set_config('role', 'postgres', true);
 
   -- B is untouched.
   if not exists (select 1 from app.users where id = b) or not exists (select 1 from app.pantry_items where household_id = hh_b) then

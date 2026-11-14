@@ -89,12 +89,16 @@ export interface Access {
  *   replayed onto another account
  * - a refunded / revoked transaction ends access at its revocation date
  * `graceUntil` (renewal info) extends access during Apple's billing grace period.
+ * `transferred`: the server already tied this subscription to this account (its first account
+ * was deleted, see `claim`), so appAccountToken naming the old account is expected.
  */
-export function accessFrom(tx: Tx, userId: string, graceUntil?: number): Access {
+export const ANOTHER_ACCOUNT = "transaction belongs to another account";
+
+export function accessFrom(tx: Tx, userId: string, graceUntil?: number, { transferred = false } = {}): Access {
   if (!tx.productId || !allowedProducts().has(tx.productId)) throw new SubscriptionError(`unknown product ${tx.productId}`);
   if (tx.type !== "Auto-Renewable Subscription") throw new SubscriptionError(`not a subscription (${tx.type})`);
-  if (!tx.appAccountToken || tx.appAccountToken.toLowerCase() !== userId.toLowerCase()) {
-    throw new SubscriptionError("transaction belongs to another account");
+  if (!transferred && (!tx.appAccountToken || tx.appAccountToken.toLowerCase() !== userId.toLowerCase())) {
+    throw new SubscriptionError(ANOTHER_ACCOUNT);
   }
   if (!tx.originalTransactionId || !tx.expiresDate) throw new SubscriptionError("transaction has no expiry");
   const end = tx.revocationDate ?? Math.max(tx.expiresDate, graceUntil ?? 0);
@@ -147,4 +151,37 @@ export async function status(admin: SupabaseClient, userId: string) {
     product: data?.subscription_product ?? null,
     expires_at: expires?.toISOString() ?? null,
   };
+}
+
+// ---------------------------------------------------------------- after Delete account
+
+/**
+ * Whether this account may use a subscription whose appAccountToken names another account:
+ * "owned" when it was already moved here, "released" when its account was deleted
+ * (app.released_subscriptions, written by app.delete_my_account), else null.
+ */
+export async function claim(admin: SupabaseClient, userId: string, originalTransactionId: string):
+  Promise<"owned" | "released" | null> {
+  const { data: owner, error } = await admin.schema("app").from("users").select("id")
+    .eq("original_transaction_id", originalTransactionId).maybeSingle();
+  if (error) throw error;
+  if (owner) return owner.id === userId ? "owned" : null;
+  const { data: released, error: e2 } = await admin.schema("app").from("released_subscriptions")
+    .select("original_transaction_id").eq("original_transaction_id", originalTransactionId).maybeSingle();
+  if (e2) throw e2;
+  return released ? "released" : null;
+}
+
+/** Once claimed, the subscription belongs to the new account (the unique index guards races). */
+export async function forgetReleased(admin: SupabaseClient, originalTransactionId: string) {
+  const { error } = await admin.schema("app").from("released_subscriptions").delete()
+    .eq("original_transaction_id", originalTransactionId);
+  if (error) throw error;
+}
+
+/** The account that holds this subscription now, if any. */
+export async function ownerOf(admin: SupabaseClient, originalTransactionId: string): Promise<string | undefined> {
+  const { data } = await admin.schema("app").from("users").select("id")
+    .eq("original_transaction_id", originalTransactionId).maybeSingle();
+  return data?.id;
 }

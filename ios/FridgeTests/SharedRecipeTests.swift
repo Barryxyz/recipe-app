@@ -80,3 +80,22 @@ final class PrivacyLinkTests: XCTestCase {
         XCTAssertEqual(AppConfig.privacyURL?.absoluteString, base.absoluteString + "/privacy")
     }
 }
+
+/// F5.3: Delete account confirmation.
+@MainActor
+final class DeleteAccountMessageTests: XCTestCase {
+    func testWarnsSubscribersThatBillingContinues() {
+        let until = ISO8601DateFormatter().date(from: "2027-03-12T12:00:00Z")!
+        let m = DeleteAccountSection.message(subscribedUntil: until)
+        XCTAssertTrue(m.contains("doesn't cancel it"))
+        XCTAssertTrue(m.contains("Manage subscription"))
+        XCTAssertTrue(m.contains("2027"))
+    }
+
+    func testEveryoneIsToldDeletingDoesntCancel() {
+        let m = DeleteAccountSection.message(subscribedUntil: nil)
+        XCTAssertTrue(m.contains("can't be undone"))
+        XCTAssertTrue(m.contains("Apple ID → Subscriptions"))
+        XCTAssertFalse(m.contains("Manage subscription"))
+    }
+}

@@ -77,6 +77,9 @@ final class SubscriptionStore {
         }
     }
 
+    /// Delete account: the next account starts without the old one's status.
+    func reset() { status = nil; message = nil; showPaywall = false }
+
     // MARK: Purchase / restore
 
     func purchase(_ product: Product) async {
