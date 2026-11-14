@@ -78,10 +78,12 @@ enum SavedRecipesAPI {
 
     /// Server-side macros from catalog data (F2.3).
     static func recomputeMacros(_ id: UUID) async throws {
-        struct Body: Encodable { let recipe_id: UUID }
+        // F5.3: unknown ingredients are only estimated by the AI with the user's consent.
+        struct Body: Encodable { let recipe_id: UUID; let estimate: Bool }
         struct Out: Decodable { let recipe_id: String }
         let _: Out = try await supabase.functions.invoke(
-            "recompute-macros", options: FunctionInvokeOptions(body: Body(recipe_id: id), timeoutInterval: 60))
+            "recompute-macros",
+            options: FunctionInvokeOptions(body: Body(recipe_id: id, estimate: AIConsent.shared.granted), timeoutInterval: 60))
     }
 
     /// Soft delete (F3.3): undo just clears deleted_at.

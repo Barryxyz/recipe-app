@@ -72,3 +72,11 @@ final class SharedRecipeTests: XCTestCase {
         XCTAssertEqual(d.payload(source: "shared").source, "shared")
     }
 }
+
+/// F5.3
+final class PrivacyLinkTests: XCTestCase {
+    func testPrivacyPolicyIsOnTheShareHost() {
+        guard let base = AppConfig.shareBaseURL else { return }
+        XCTAssertEqual(AppConfig.privacyURL?.absoluteString, base.absoluteString + "/privacy")
+    }
+}

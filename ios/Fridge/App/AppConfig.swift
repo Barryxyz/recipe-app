@@ -23,5 +23,8 @@ enum AppConfig {
     static let shareBaseURL: URL? = (Bundle.main.object(forInfoDictionaryKey: "ShareBaseURL") as? String)
         .flatMap(URL.init(string:)).flatMap { $0.host == nil ? nil : $0 }
 
+    /// The privacy policy (F5.3), served by the share Worker.
+    static var privacyURL: URL? { shareBaseURL?.appendingPathComponent("privacy") }
+
     static func shareURL(token: String) -> URL? { shareBaseURL?.appendingPathComponent("r").appendingPathComponent(token) }
 }

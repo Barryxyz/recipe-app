@@ -16,6 +16,8 @@ struct RecipeResultsView: View {
         case results(RecipeSession)
         case none(note: String, fixes: [RecipeFix])
         case failed(RecipeAPI.RecipeError)
+        /// F5.3: waiting for the AI consent.
+        case consent
     }
 
     @State private var phase: Phase = .loading
@@ -46,6 +48,8 @@ struct RecipeResultsView: View {
             if let initial {
                 phase = .results(initial)
                 Task { await reconcileSaved() }
+            } else if !AIConsent.shared.granted {
+                phase = .consent
             } else {
                 run(request)
             }
@@ -62,6 +66,8 @@ struct RecipeResultsView: View {
 
     @ViewBuilder private var content: some View {
         switch phase {
+        case .consent:
+            AIConsentView(action: "Get recipe ideas", onContinue: { run(request) }, onNotNow: onClose)
         case .loading: loading
         case .results(let session):
             if session.response.recipes.isEmpty {

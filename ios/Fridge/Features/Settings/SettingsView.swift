@@ -27,6 +27,8 @@ struct SettingsView: View {
                     .foregroundStyle(.primary)
                 }
 
+                PrivacySection()
+
                 Section("About") {
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
                     LabeledContent("Account", value: "Anonymous")
@@ -194,5 +196,25 @@ struct ExpiryRemindersSection: View {
             Text("At most one a day, listing what's about to expire. Seasonings & staples aren't included.")
         }
         .task { if reminders.enabled { blocked = !(await reminders.systemAllows()) } }
+    }
+}
+
+/// F5.3: the AI consent (can be withdrawn) and the privacy policy.
+struct PrivacySection: View {
+    @State private var consent = AIConsent.shared
+
+    var body: some View {
+        Section {
+            Toggle(isOn: Binding(get: { consent.granted }, set: { consent.granted = $0 })) {
+                Label("Use AI features", systemImage: "sparkles.rectangle.stack")
+            }
+            if let url = AppConfig.privacyURL {
+                Link(destination: url) { Label("Privacy policy", systemImage: "hand.raised") }
+            }
+        } header: {
+            Text("Privacy")
+        } footer: {
+            Text("Scanning, recipe ideas and nutrition estimates send photos, your pantry and preferences to Anthropic's AI. Photos aren't stored. Turned off, those features ask first.")
+        }
     }
 }

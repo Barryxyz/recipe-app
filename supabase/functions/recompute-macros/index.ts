@@ -7,7 +7,8 @@ import { endpoint, hasAiAccess, HttpError } from "../_shared/http.ts";
 import { computeMacros, resolveIngredients } from "../_shared/macros.ts";
 import { nutritionEstimator, supabaseStore } from "../_shared/nutrition.ts";
 
-const Body = z.object({ recipe_id: z.uuid() });
+// estimate: false when the user hasn't agreed to the AI (F5.3); older apps omit it.
+const Body = z.object({ recipe_id: z.uuid(), estimate: z.boolean().optional() });
 
 export default {
   fetch: endpoint("recompute-macros", async ({ userId, supabase, supabaseAdmin, body }) => {
@@ -33,7 +34,8 @@ export default {
       grams: r.grams == null ? null : Number(r.grams),
       is_optional: r.is_optional,
     }));
-    const estimate = (await hasAiAccess(userId, supabaseAdmin)) ? nutritionEstimator(userId, supabaseAdmin) : null;
+    const estimate = parsed.data.estimate !== false && (await hasAiAccess(userId, supabaseAdmin))
+      ? nutritionEstimator(userId, supabaseAdmin) : null;
     const { ingredients: resolved, info } = await resolveIngredients(ingredients, supabaseStore(supabase), estimate);
     const macros = computeMacros(resolved, recipe.servings, info);
 

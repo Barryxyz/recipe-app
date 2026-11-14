@@ -12,6 +12,7 @@ struct ScanView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @StateObject private var camera = CameraController()
+    @State private var consent = AIConsent.shared
 
     private enum Phase: Equatable {
         case capturing
@@ -39,6 +40,9 @@ struct ScanView: View {
     var body: some View {
         NavigationStack {
             Group {
+                if !consent.granted {
+                    AIConsentView(action: "Scan your fridge", onContinue: {}, onNotNow: { finish() })
+                } else {
                 switch phase {
                 case .capturing: captureScreen
                 case .sending: sendingScreen
@@ -50,6 +54,7 @@ struct ScanView: View {
                                    onAddManually: { addManually() })
                 case .failed(let e): failedScreen(e)
                 }
+                }
             }
             .toolbar {
                 if !isReviewing {
@@ -58,7 +63,8 @@ struct ScanView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
-        .task { await camera.requestAccessAndStart() }
+        // F5.3: the camera starts only after the AI consent.
+        .task(id: consent.granted) { if consent.granted { await camera.requestAccessAndStart() } }
         .task {
             usage = try? await ScanAPI.usage()
             stapleIds = (try? await PantryAPI.catalogStapleIds()) ?? []
