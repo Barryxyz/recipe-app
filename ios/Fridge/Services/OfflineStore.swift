@@ -248,10 +248,18 @@ final class OfflineStore {
 
         // Small, read-mostly data: refreshed now and then.
         if state.catalog.isEmpty || (state.catalogFetchedAt.map { Date.now.timeIntervalSince($0) > 7 * 86400 } ?? true) {
-            state.catalog = try await supabase.schema("catalog").from("ingredients")
-                .select("id, name, aliases, category, default_unit, shelf_life_fridge_days, shelf_life_freezer_days, " +
-                        "shelf_life_pantry_days, is_common_staple")
-                .order("name").execute().value
+            // In pages: the API returns at most 1,000 rows per request.
+            var all: [CatalogItem] = []
+            let page = 1000
+            while true {
+                let batch: [CatalogItem] = try await supabase.schema("catalog").from("ingredients")
+                    .select("id, name, aliases, category, default_unit, shelf_life_fridge_days, shelf_life_freezer_days, " +
+                            "shelf_life_pantry_days, is_common_staple")
+                    .order("id").range(from: all.count, to: all.count + page - 1).execute().value
+                all += batch
+                if batch.count < page { break }
+            }
+            state.catalog = all.sorted { $0.name < $1.name }
             state.catalogFetchedAt = .now
         }
         if state.customsFetchedAt.map({ Date.now.timeIntervalSince($0) > 300 }) ?? true {

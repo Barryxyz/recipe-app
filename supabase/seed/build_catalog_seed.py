@@ -7,9 +7,12 @@ its exact description, and writes:
   - load_catalog.sql   an idempotent upsert of catalog_seed.csv into catalog.*
 
 Usage:
-  1. Download and unzip USDA FoodData Central "SR Legacy" (CSV):
+  1. Download and unzip USDA FoodData Central "SR Legacy" (CSV), and optionally the FNDDS
+     "Survey" foods (CSV) for foods SR Legacy lacks (oat milk, kimchi, pierogi...):
      https://fdc.nal.usda.gov/download-datasets  ->  FoodData_Central_sr_legacy_food_csv_2018-04.zip
-  2. python3 -I supabase/seed/build_catalog_seed.py <path to the unzipped SR Legacy folder>
+                                                     FoodData_Central_survey_food_csv_2024-10-31.zip
+  2. python3 -I supabase/seed/build_catalog_seed.py <SR Legacy folder> [<Survey folder>]
+     An item's usda_description is looked up in SR Legacy first, then in the Survey foods.
   3. Review catalog_seed.csv, then load it:
      supabase db query --remote -f supabase/seed/load_catalog.sql
 
@@ -35,7 +38,12 @@ NUTRIENTS = {
     "2000": "sugar_g",    # Sugars, total including NLEA
     "1093": "sodium_mg",  # Sodium, Na
 }
-NUTRIENT_COLS = list(NUTRIENTS.values())
+# The Survey (FNDDS) files use the older nutrient numbers for the same nutrients.
+NUTRIENTS.update({
+    "208": "kcal", "203": "protein_g", "205": "carbs_g", "204": "fat_g",
+    "291": "fiber_g", "269": "sugar_g", "307": "sodium_mg",
+})
+NUTRIENT_COLS = list(dict.fromkeys(NUTRIENTS.values()))
 
 ITEM_COLS = [
     "id", "name", "aliases", "category", "default_unit", "grams_per_unit", "density_g_per_ml",
@@ -56,11 +64,11 @@ def find_csv(root: Path, name: str) -> Path:
 FDP_SUFFIX = " (Includes foods for USDA's Food Distribution Program)"
 
 
-def load_usda(root: Path):
+def load_usda(root: Path, data_type: str = "sr_legacy_food"):
     foods = {}
     with open(find_csv(root, "food.csv"), newline="") as f:
         for row in csv.DictReader(f):
-            if row["data_type"] == "sr_legacy_food":
+            if row["data_type"] == data_type:
                 foods[row["description"]] = row["fdc_id"]
                 # Also match without USDA's distribution-program suffix.
                 if row["description"].endswith(FDP_SUFFIX):
@@ -104,9 +112,14 @@ def sql_array(v):
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         sys.exit(__doc__)
     foods, nutrients = load_usda(Path(sys.argv[1]))
+    if len(sys.argv) == 3:
+        survey_foods, survey_nutrients = load_usda(Path(sys.argv[2]), "survey_fndds_food")
+        for desc, fdc in survey_foods.items():
+            foods.setdefault(desc, fdc)
+        nutrients.update(survey_nutrients)
 
     with open(ITEMS, newline="") as f:
         items = list(csv.DictReader(f))
