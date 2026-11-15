@@ -12,7 +12,7 @@ final class SharedRecipeTests: XCTestCase {
     }
 
     func testAppSchemeLink() {
-        XCTAssertEqual(SharedLink.token(from: URL(string: "com.barryxyz.fridge://r/\(token)")!, shareHost: host), token)
+        XCTAssertEqual(SharedLink.token(from: URL(string: "com.barryxyz.spoilnot://r/\(token)")!, shareHost: host), token)
     }
 
     func testOtherLinksAreIgnored() {
@@ -23,7 +23,7 @@ final class SharedRecipeTests: XCTestCase {
             "https://\(host)/r/\(token)/extra",
             "https://\(host)/x/\(token)",
             "https://\(host)/r/AbCdEfGhIjKlMnOpQrSt-1",
-            "com.barryxyz.fridge://x/\(token)",
+            "com.barryxyz.spoilnot://x/\(token)",
             "other://r/\(token)",
         ]
         for s in bad { XCTAssertNil(SharedLink.token(from: URL(string: s)!, shareHost: host), s) }

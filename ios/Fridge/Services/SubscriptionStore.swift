@@ -11,7 +11,7 @@ import Supabase
 final class SubscriptionStore {
     static let shared = SubscriptionStore()
 
-    static let productIds = ["com.barryxyz.fridge.monthly", "com.barryxyz.fridge.yearly"]
+    static let productIds = ["com.barryxyz.spoilnot.monthly", "com.barryxyz.spoilnot.yearly"]
 
     struct ServerStatus: Decodable, Equatable {
         let active: Bool

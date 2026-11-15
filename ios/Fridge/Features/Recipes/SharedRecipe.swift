@@ -90,10 +90,10 @@ struct SharedRecipe: Decodable, Equatable {
 }
 
 /// Share links: `https://<share host>/r/<token>` (Universal Links once the app has the
-/// Associated Domains entitlement), and `com.barryxyz.fridge://r/<token>` for testing on
+/// Associated Domains entitlement), and `com.barryxyz.spoilnot://r/<token>` for testing on
 /// builds without it.
 enum SharedLink {
-    static let scheme = "com.barryxyz.fridge"
+    static let scheme = "com.barryxyz.spoilnot"
 
     static func token(from url: URL, shareHost: String? = AppConfig.shareBaseURL?.host) -> String? {
         let parts: [String]

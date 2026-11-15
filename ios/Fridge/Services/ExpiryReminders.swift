@@ -10,7 +10,7 @@ import UserNotifications
 final class ExpiryReminders: NSObject {
     static let shared = ExpiryReminders()
 
-    static let backgroundTaskId = "com.barryxyz.fridge.refresh"
+    static let backgroundTaskId = "com.barryxyz.spoilnot.refresh"
     private static let idPrefix = "expiry-digest-"
     private static let daysAhead = 7
 

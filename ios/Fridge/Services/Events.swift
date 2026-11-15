@@ -30,7 +30,7 @@ enum Events {
 
     private static var buffer: [Row] = []
     private static var flushTask: Task<Void, Never>?
-    private static let logger = Logger(subsystem: "com.barryxyz.fridge", category: "events")
+    private static let logger = Logger(subsystem: "com.barryxyz.spoilnot", category: "events")
     private static let batchSize = 10
 
     static func log(_ name: Name, _ props: [String: AnyJSON] = [:]) {

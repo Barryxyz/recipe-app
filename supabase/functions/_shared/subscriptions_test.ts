@@ -5,17 +5,17 @@ import { accessFrom, claimedEnvironment, SubscriptionError, type Tx, verifierFor
 const USER = "6f1c2e7a-1111-4222-8333-944455556666";
 const NOW = Date.UTC(2026, 10, 13);
 const tx = (over: Partial<Tx> = {}): Tx => ({
-  productId: "com.barryxyz.fridge.yearly", type: "Auto-Renewable Subscription", appAccountToken: USER.toUpperCase(),
+  productId: "com.barryxyz.spoilnot.yearly", type: "Auto-Renewable Subscription", appAccountToken: USER.toUpperCase(),
   originalTransactionId: "2000000123", expiresDate: NOW + 365 * 86400e3, signedDate: NOW, environment: "Sandbox",
-  bundleId: "com.barryxyz.fridge", ...over,
+  bundleId: "com.barryxyz.spoilnot", ...over,
 });
 
 Deno.test("a valid yearly or monthly subscription grants access until it expires", () => {
   const a = accessFrom(tx(), USER);
-  assertEquals(a.product, "com.barryxyz.fridge.yearly");
+  assertEquals(a.product, "com.barryxyz.spoilnot.yearly");
   assertEquals(a.expiresAt.getTime(), NOW + 365 * 86400e3);
   assertEquals(a.environment, "Sandbox");
-  assertEquals(accessFrom(tx({ productId: "com.barryxyz.fridge.monthly" }), USER).product, "com.barryxyz.fridge.monthly");
+  assertEquals(accessFrom(tx({ productId: "com.barryxyz.spoilnot.monthly" }), USER).product, "com.barryxyz.spoilnot.monthly");
 });
 
 Deno.test("another account's transaction, unknown products and non-subscriptions are refused", () => {

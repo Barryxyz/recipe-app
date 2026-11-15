@@ -6,10 +6,10 @@ import { APPLE_ROOT_CA, APPLE_ROOT_CA_G3 } from "./apple_roots.ts";
 
 const env = (k: string) => Deno.env.get(k);
 
-export const BUNDLE_ID = env("APPLE_BUNDLE_ID") ?? "com.barryxyz.fridge";
+export const BUNDLE_ID = env("APPLE_BUNDLE_ID") ?? "com.barryxyz.spoilnot";
 /** Both subscriptions are in one group; changing between them is handled by Apple. */
 export function allowedProducts(): Set<string> {
-  return new Set((env("APPLE_PRODUCT_IDS") ?? "com.barryxyz.fridge.monthly,com.barryxyz.fridge.yearly")
+  return new Set((env("APPLE_PRODUCT_IDS") ?? "com.barryxyz.spoilnot.monthly,com.barryxyz.spoilnot.yearly")
     .split(",").map((s) => s.trim()).filter(Boolean));
 }
 

@@ -4,7 +4,7 @@
 <dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.barryxyz.fridge.refresh</string>
+		<string>com.barryxyz.spoilnot.refresh</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
@@ -26,10 +26,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.barryxyz.fridge.share</string>
+			<string>com.barryxyz.spoilnot.share</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.barryxyz.fridge</string>
+				<string>com.barryxyz.spoilnot</string>
 			</array>
 		</dict>
 	</array>

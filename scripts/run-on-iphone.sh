@@ -20,4 +20,4 @@ xcodebuild -project Fridge.xcodeproj -scheme Fridge -destination "id=$UDID" \
   -derivedDataPath build/dd -allowProvisioningUpdates -quiet build
 
 xcrun devicectl device install app --device "$DEVICE" build/dd/Build/Products/Debug-iphoneos/Fridge.app >/dev/null
-xcrun devicectl device process launch --device "$DEVICE" com.barryxyz.fridge
+xcrun devicectl device process launch --device "$DEVICE" com.barryxyz.spoilnot

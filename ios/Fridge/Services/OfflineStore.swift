@@ -23,7 +23,7 @@ final class Connectivity {
                 if ok && !was { await OfflineStore.shared.sync() }
             }
         }
-        monitor.start(queue: DispatchQueue(label: "com.barryxyz.fridge.connectivity"))
+        monitor.start(queue: DispatchQueue(label: "com.barryxyz.spoilnot.connectivity"))
     }
 }
 
@@ -93,7 +93,7 @@ final class OfflineStore {
     private var syncTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
     private var ticker: Task<Void, Never>?
-    private let logger = Logger(subsystem: "com.barryxyz.fridge", category: "sync")
+    private let logger = Logger(subsystem: "com.barryxyz.spoilnot", category: "sync")
     private var app: PostgrestClient { supabase.schema("app") }
 
     private init() {}

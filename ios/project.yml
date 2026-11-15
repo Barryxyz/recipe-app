@@ -37,19 +37,19 @@ targets:
         UIBackgroundModes:
           - fetch
         BGTaskSchedulerPermittedIdentifiers:
-          - com.barryxyz.fridge.refresh
+          - com.barryxyz.spoilnot.refresh
         NSCameraUsageDescription: Spoil Not uses the camera to photograph your fridge, freezer or pantry so it can list the food inside. Photos aren't stored.
         SupabaseURL: $(SUPABASE_URL)
         SupabaseKey: $(SUPABASE_KEY)
         ShareBaseURL: $(SHARE_BASE_URL)
         # F4.3: opens share links on builds without Universal Links (testing).
         CFBundleURLTypes:
-          - CFBundleURLName: com.barryxyz.fridge.share
+          - CFBundleURLName: com.barryxyz.spoilnot.share
             CFBundleURLSchemes:
-              - com.barryxyz.fridge
+              - com.barryxyz.spoilnot
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.fridge
+        PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.spoilnot
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
@@ -73,7 +73,7 @@ targets:
       - package: Supabase
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.fridge.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.barryxyz.spoilnot.tests
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_VERSION: "5.0"
         DEVELOPMENT_TEAM: V2KLBCFV26
