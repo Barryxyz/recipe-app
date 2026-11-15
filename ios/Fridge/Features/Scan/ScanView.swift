@@ -118,7 +118,7 @@ struct ScanView: View {
         VStack(spacing: 14) {
             Image(systemName: "camera.fill").font(.largeTitle)
             Text("Camera access is off").font(.headline)
-            Text("Fridge uses the camera to photograph your shelves and list the food on them. Photos aren't stored.")
+            Text("Spoil Not uses the camera to photograph your shelves and list the food on them. Photos aren't stored.")
                 .multilineTextAlignment(.center).font(.subheadline)
             Button("Open Settings") {
                 if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }

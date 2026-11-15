@@ -1,4 +1,6 @@
-# Fridge
+# Spoil Not
+
+(The code, Xcode project and bundle id still use the working name "Fridge".)
 
 An iOS app that tracks what's in your fridge (by photo or manual entry) and generates recipes from it. See [DESIGN.md](DESIGN.md) and the per-feature [specs](specs/README.md).
 

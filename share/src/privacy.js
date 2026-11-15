@@ -1,4 +1,4 @@
-// F5.3: the privacy policy, served at /privacy. No app name until it's final (2026-11-14).
+// F5.3: the privacy policy, served at /privacy.
 // Anthropic's API terms were checked on 2026-11-14 (no training on API data by default,
 // inputs and outputs deleted within 30 days); check them again before launch.
 import { esc } from "./render.js";
@@ -8,10 +8,10 @@ export const UPDATED = "November 14, 2026";
 
 export function privacyBody() {
   return `
-<h1>Privacy policy</h1>
+<h1>Spoil Not privacy policy</h1>
 <p class="desc">Last updated ${esc(UPDATED)}</p>
 
-<p>This app helps you keep track of the food you have, use it before it expires, and get recipe ideas.
+<p>Spoil Not helps you keep track of the food you have, use it before it expires, and get recipe ideas.
 This page explains what it stores, what it sends to other services, and how to delete it.</p>
 
 <h2>Your account</h2>

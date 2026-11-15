@@ -169,7 +169,7 @@ struct ExpiryRemindersSection: View {
             }))
             if blocked {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Notifications are off for Fridge in iOS Settings.").font(.footnote).foregroundStyle(.secondary)
+                    Text("Notifications are off for Spoil Not in iOS Settings.").font(.footnote).foregroundStyle(.secondary)
                     Button("Open iOS Settings") {
                         if let url = URL(string: UIApplication.openNotificationSettingsURLString) { UIApplication.shared.open(url) }
                     }

@@ -1,4 +1,4 @@
-# Fridge App — Design Document
+# Spoil Not — Design Document
 
 **Status:** Draft v1.3 · **Last updated:** 2026-09-22 · **Platform:** iOS only
 

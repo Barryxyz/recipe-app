@@ -81,7 +81,7 @@ private struct ReadyView: View {
                 Button("Turn on") { Task { await reminders.turnOn() } }
                 Button("Not now", role: .cancel) {}
             } message: {
-                Text("Fridge can send one reminder a day, at \(reminders.time.formatted(date: .omitted, time: .shortened)), listing what's about to expire. You can change this in Settings.")
+                Text("Spoil Not can send one reminder a day, at \(reminders.time.formatted(date: .omitted, time: .shortened)), listing what's about to expire. You can change this in Settings.")
             }
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView(user: user) { showOnboarding = false }

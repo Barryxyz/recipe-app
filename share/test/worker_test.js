@@ -3,7 +3,7 @@ import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
 import { handle } from "../src/index.js";
 import { amount, esc, recipePage } from "../src/render.js";
 
-const ENV = { SUPABASE_URL: "https://x.supabase.co", SUPABASE_KEY: "sb_publishable_test", APP_NAME: "Fridge", APP_ID: "T.app" };
+const ENV = { SUPABASE_URL: "https://x.supabase.co", SUPABASE_KEY: "sb_publishable_test", APP_NAME: "Spoil Not", APP_ID: "T.app" };
 const RECIPE = {
   title: "Lemon <Chicken>", description: "Bright & quick.", servings: 2, prep_min: 10, cook_min: 20,
   steps: ["1. Heat the pan.", "Cook the chicken to 74 °C."],
@@ -34,7 +34,7 @@ Deno.test("a shared recipe renders in full, escaped, with the disclaimers", asyn
   assertStringIncludes(body, "AI-generated recipe");
   assertStringIncludes(body, "hidden allergens");
   assert(!body.includes("<script"), "no JavaScript");
-  assert(!body.includes("Fridge"), "no app name on the page until the name is final");
+  assertStringIncludes(body, "Shared with Spoil Not.");
 });
 
 Deno.test("own recipes say 'Shared by its author' instead of the AI line", () => {
@@ -76,17 +76,16 @@ Deno.test("helpers", () => {
   assertEquals(amount(0.3, "kg"), "0.3 kg");
 });
 
-Deno.test("the privacy policy is served, indexable, with the contact address and no app name", async () => {
+Deno.test("the privacy policy is served, indexable, with the app name and contact address", async () => {
   const res = await handle(new Request("https://x.workers.dev/privacy"), ENV, () => {
     throw new Error("no Supabase call for /privacy");
   });
   assertEquals(res.status, 200);
   assertEquals(res.headers.get("x-robots-tag"), null);
   const body = await res.text();
-  assertStringIncludes(body, "<h1>Privacy policy</h1>");
+  assertStringIncludes(body, "<h1>Spoil Not privacy policy</h1>");
   assertStringIncludes(body, "mailto:fridgefoodscanner@gmail.com");
   assertStringIncludes(body, "Photos aren't stored");
   assertStringIncludes(body, "Settings → Delete account");
   assertEquals(body.includes("noindex"), false);
-  assertEquals(/\bFridge\b/.test(body), false);
 });

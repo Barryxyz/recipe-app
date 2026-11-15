@@ -124,7 +124,7 @@ final class ExpiryReminders: NSObject {
     func sendTest() async -> String? {
         var allowed = await systemAllows()
         if !allowed { allowed = await turnOn() }
-        guard allowed else { return "Notifications are off for Fridge in iOS Settings." }
+        guard allowed else { return "Notifications are off for Spoil Not in iOS Settings." }
         guard let items = try? await PantryAPI.activeItems() else { return "Couldn't load your pantry." }
         let content = UNMutableNotificationContent()
         if let d = ExpiryDigest.digest(items: items, day: Calendar.current.startOfDay(for: .now), leadDays: leadDays) {

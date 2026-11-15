@@ -67,7 +67,7 @@ struct OnboardingView: View {
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: "refrigerator").font(.system(size: 56)).foregroundStyle(.tint)
-            Text("Welcome to Fridge").font(.largeTitle.bold())
+            Text("Welcome to Spoil Not").font(.largeTitle.bold())
             Text("Keep track of what's in your fridge, freezer and pantry, use things before they expire, and get recipes from what you have.")
             Label {
                 Text("When you scan your fridge, the photo is sent to an AI service to identify the food. Photos aren't stored.")

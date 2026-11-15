@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Fridge</string>
+	<string>Spoil Not</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -36,7 +36,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Fridge uses the camera to photograph your fridge, freezer or pantry so it can list the food inside. Photos aren't stored.</string>
+	<string>Spoil Not uses the camera to photograph your fridge, freezer or pantry so it can list the food inside. Photos aren't stored.</string>
 	<key>ShareBaseURL</key>
 	<string>$(SHARE_BASE_URL)</string>
 	<key>SupabaseKey</key>

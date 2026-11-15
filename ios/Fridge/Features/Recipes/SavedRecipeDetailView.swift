@@ -145,7 +145,7 @@ struct SavedRecipeDetailView: View {
     }
 }
 
-/// The message that goes with a shared link: "<title>: a recipe from Fridge" (Messages and Mail
+/// The message that goes with a shared link: "<title>: a recipe from Spoil Not" (Messages and Mail
 /// show it above the link preview).
 final class ShareText: NSObject, UIActivityItemSource {
     let title: String
@@ -154,9 +154,9 @@ final class ShareText: NSObject, UIActivityItemSource {
 
     func activityViewControllerPlaceholderItem(_ vc: UIActivityViewController) -> Any { "" }
     func activityViewController(_ vc: UIActivityViewController, itemForActivityType type: UIActivity.ActivityType?) -> Any? {
-        type == .copyToPasteboard ? nil : "\(title): a recipe from Fridge"
+        type == .copyToPasteboard ? nil : "\(title): a recipe from Spoil Not"
     }
     func activityViewController(_ vc: UIActivityViewController, subjectForActivityType type: UIActivity.ActivityType?) -> String {
-        "\(title): a recipe from Fridge"
+        "\(title): a recipe from Spoil Not"
     }
 }

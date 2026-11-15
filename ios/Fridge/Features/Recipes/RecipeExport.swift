@@ -111,7 +111,7 @@ enum RecipeExport {
 
         let data = NSMutableData()
         UIGraphicsBeginPDFContextToData(data, paper, [kCGPDFContextTitle as String: r.title,
-                                                      kCGPDFContextCreator as String: "Fridge"])
+                                                      kCGPDFContextCreator as String: "Spoil Not"])
         for page in 0..<max(1, renderer.numberOfPages) {
             UIGraphicsBeginPDFPage()
             renderer.drawPage(at: page, in: UIGraphicsGetPDFContextBounds())
