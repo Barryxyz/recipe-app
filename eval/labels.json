@@ -1,0 +1,77 @@
+{
+  "_comment": "F1.2 scan accuracy labels (2026-11-14), confirmed by the user. Names are food-list names where one exists; aka lists other names that count as the same item. unknown_items = real food on the shelf the user didn't name; up to that many unmatched detections aren't counted as wrong. Photos are not committed (eval/photos/ is git-ignored).",
+  "scans": [
+    {
+      "id": "pantry-naan-mac", "location": "pantry", "tidy": true, "photos": ["IMG_0001.HEIC"], "unknown_items": 2,
+      "items": [
+        { "name": "naan", "aka": ["naan bread", "flatbread"] },
+        { "name": "mac and cheese box", "aka": ["goodles", "mac and cheese", "macaroni and cheese", "boxed mac and cheese"], "quantity": 3, "unit": "each" }
+      ]
+    },
+    {
+      "id": "pantry-tuna", "location": "pantry", "tidy": true, "photos": ["IMG_0002.HEIC"], "unknown_items": 6,
+      "items": [
+        { "name": "canned tuna", "aka": ["tuna", "tuna pouches", "chicken of the sea", "light tuna"] }
+      ]
+    },
+    {
+      "id": "pantry-furikake", "location": "pantry", "tidy": true, "photos": ["IMG_0003.HEIC"], "unknown_items": 5,
+      "items": [
+        { "name": "furikake", "aka": ["wasabi furikake", "rice seasoning", "seaweed seasoning"], "quantity": 2, "unit": "each" },
+        { "name": "dried mango", "aka": ["dried fruit"] }
+      ]
+    },
+    {
+      "id": "pantry-protein-bars", "location": "pantry", "tidy": true, "photos": ["IMG_0004.HEIC"], "unknown_items": 3,
+      "items": [
+        { "name": "protein bars", "aka": ["protein bar", "pure protein bars", "pure protein"], "quantity": 25, "unit": "each" }
+      ]
+    },
+    {
+      "id": "pantry-snacks", "location": "pantry", "tidy": false, "photos": ["IMG_0005.HEIC"], "unknown_items": 4,
+      "items": [
+        { "name": "tortilla chips", "aka": ["chips"] },
+        { "name": "protein bars", "aka": ["protein bar", "barebells", "protein bars box"] },
+        { "name": "popcorn microwave", "aka": ["popcorn", "microwave popcorn", "pop secret"] },
+        { "name": "gummy bears", "aka": ["sour patch kids", "gummy candy", "candy", "sour candy"] },
+        { "name": "nut butter bars", "aka": ["peanut butter bar", "peanut butter bars", "granola bars", "honey cinnamon peanut butter bar"] }
+      ]
+    },
+    {
+      "id": "fridge-door", "location": "fridge", "tidy": true, "photos": ["IMG_9990.HEIC", "IMG_9991.HEIC"], "unknown_items": 5,
+      "items": [
+        { "name": "ketchup", "aka": ["heinz ketchup", "tomato ketchup"] },
+        { "name": "gochujang", "aka": ["korean chili paste", "red pepper paste", "chili paste"] },
+        { "name": "oyster sauce", "aka": ["hoisin sauce"] }
+      ]
+    },
+    {
+      "id": "fridge-drawers", "location": "fridge", "tidy": true, "photos": ["IMG_9992.HEIC", "IMG_9993.HEIC"], "unknown_items": 1,
+      "items": [
+        { "name": "udon noodles", "aka": ["udon", "stir-fry udon", "teriyaki udon", "teriyaki stir-fry udon"], "quantity": 1, "unit": "each" },
+        { "name": "drinkable yogurt", "aka": ["oikos pro", "yogurt drink", "yogurt drinks", "protein shake", "yogurt"], "quantity": 5, "unit": "each" },
+        { "name": "chicken patties", "aka": ["maple chicken patties", "chicken sausage", "chicken patty", "breakfast patties"], "quantity": 1, "unit": "each" },
+        { "name": "canned drinks", "aka": ["hard seltzer", "seltzer", "sparkling water", "energy drink", "soda", "cola", "canned beverages"] }
+      ]
+    },
+    {
+      "id": "fridge-shelves", "location": "fridge", "tidy": true, "photos": ["IMG_9994.HEIC", "IMG_9995.HEIC"], "unknown_items": 5,
+      "items": [
+        { "name": "kimchi", "quantity": 1, "unit": "each" },
+        { "name": "cream cheese", "aka": ["philadelphia", "philadelphia cream cheese"], "quantity": 2, "unit": "each" },
+        { "name": "pickled jalapeños", "aka": ["jalapeños", "jalapenos", "pickled jalapenos", "jalapeño peppers"] },
+        { "name": "bagels", "aka": ["buns", "bread rolls", "bread", "bagel"] },
+        { "name": "chinese sausage", "aka": ["lap cheong", "chinese style sausage", "sausage"] },
+        { "name": "garlic", "aka": ["garlic cloves", "peeled garlic"] }
+      ]
+    },
+    {
+      "id": "freezer", "location": "freezer", "tidy": false, "photos": ["IMG_9997.HEIC", "IMG_9998.HEIC"], "unknown_items": 2,
+      "items": [
+        { "name": "frozen hash browns", "aka": ["hash browns", "tater tots", "frozen potatoes", "potatoes", "trader joe's potato"] },
+        { "name": "frozen shrimp", "aka": ["shrimp", "prawns"] },
+        { "name": "ground beef", "aka": ["frozen meat", "beef", "steak", "frozen beef"] }
+      ]
+    }
+  ]
+}

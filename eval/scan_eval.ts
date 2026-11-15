@@ -7,8 +7,9 @@
 // ≤ 1568 px before upload (the app does the same on the phone). Costs real money:
 // about $0.03-0.06 per scan with 4 photos.
 
-interface Label { name: string; quantity?: number; unit?: string }
-interface Scan { id: string; location: string; tidy?: boolean; photos: string[]; items: Label[] }
+interface Label { name: string; aka?: string[]; quantity?: number; unit?: string }
+/** unknown_items: real food the labeler didn't name; that many unmatched detections aren't counted as wrong. */
+interface Scan { id: string; location: string; tidy?: boolean; photos: string[]; items: Label[]; unknown_items?: number }
 interface Draft { name: string; display_name: string; quantity: number | null; unit: string | null; low_confidence: boolean }
 
 const here = new URL(".", import.meta.url).pathname;
@@ -34,8 +35,11 @@ async function prepare(file: string): Promise<string> {
   }
 }
 
-/** A detected item counts for a label if either its catalog name or the model's own name matches. */
-const matches = (d: Draft, l: Label) => norm(d.display_name) === norm(l.name) || norm(d.name) === norm(l.name);
+/** A detected item counts for a label if its catalog name or the model's own name is the label's name or one of
+ *  its aka names, or contains one as whole words ("Heinz Tomato Ketchup" counts for "ketchup"). */
+const words = (s: string) => ` ${norm(s).replace(/[^a-z0-9&' ]/g, " ").replace(/\s+/g, " ")} `;
+const matches = (d: Draft, l: Label) => [l.name, ...(l.aka ?? [])].some((n) =>
+  [d.display_name, d.name].some((got) => got && words(got).includes(words(n))));
 
 const rows: { id: string; tidy: boolean; labels: number; found: number; predicted: number; correct: number; qtyErrs: number[]; ms: number; misses: string[]; extras: string[] }[] = [];
 for (const scan of labels.scans) {
@@ -51,7 +55,10 @@ for (const scan of labels.scans) {
   const items: Draft[] = (await res.json()).items;
 
   const found = scan.items.filter((l) => items.some((d) => matches(d, l)));
-  const correct = items.filter((d) => scan.items.some((l) => matches(d, l)));
+  const matched = items.filter((d) => scan.items.some((l) => matches(d, l)));
+  // Up to unknown_items unmatched detections are presumed to be the unnamed food on the shelf.
+  const unmatched = items.length - matched.length;
+  const correct = { length: matched.length + Math.min(scan.unknown_items ?? 0, unmatched) };
   const qtyErrs = scan.items.flatMap((l) => {
     const d = items.find((x) => matches(x, l));
     if (!d || l.quantity == null || d.quantity == null || (l.unit && d.unit && l.unit !== d.unit)) return [];
@@ -61,7 +68,7 @@ for (const scan of labels.scans) {
     id: scan.id, tidy: scan.tidy ?? false, labels: scan.items.length, found: found.length,
     predicted: items.length, correct: correct.length, qtyErrs, ms,
     misses: scan.items.filter((l) => !found.includes(l)).map((l) => l.name),
-    extras: items.filter((d) => !correct.includes(d)).map((d) => d.display_name),
+    extras: items.filter((d) => !matched.includes(d)).map((d) => d.display_name),
   });
   console.log(`${scan.id}: found ${found.length}/${scan.items.length}, ${correct.length}/${items.length} correct, ${(ms / 1000).toFixed(1)} s`);
 }
