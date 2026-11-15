@@ -25,6 +25,8 @@ struct PantryListView: View {
     @State private var showSettings = false
     @State private var showHistory = false
     @State private var showScan = false
+    /// Empty pantry: both buttons' icon and text start at the same place (grows with text size).
+    @ScaledMetric private var emptyLabelWidth: CGFloat = 170
     @State private var notice: String?
     @State private var pendingReview: ScanReview?
     @State private var resumingReview: ScanReview?
@@ -131,13 +133,9 @@ struct PantryListView: View {
             } actions: {
                 // Stacked, full width: side by side, "Scan your fridge" was cut off.
                 VStack(spacing: 12) {
-                    Button { showScan = true } label: {
-                        Label("Scan your fridge", systemImage: "camera").frame(maxWidth: .infinity)
-                    }
-                    .needsInternet()
-                    Button { showAdd = true } label: {
-                        Label("Add manually", systemImage: "plus").frame(maxWidth: .infinity)
-                    }
+                    Button { showScan = true } label: { emptyLabel("Scan your fridge", icon: "camera") }
+                        .needsInternet()
+                    Button { showAdd = true } label: { emptyLabel("Add manually", icon: "plus") }
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
@@ -412,6 +410,17 @@ struct PantryListView: View {
             actionError = error.localizedDescription
         }
         await load()
+    }
+
+    /// Icon in a fixed-width column, text after it, the pair centred in the button: the icons
+    /// and the text line up from one button to the next.
+    private func emptyLabel(_ title: String, icon: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon).frame(width: 24)
+            Text(title)
+        }
+        .frame(width: emptyLabelWidth, alignment: .leading)
+        .frame(maxWidth: .infinity)
     }
 }
 
