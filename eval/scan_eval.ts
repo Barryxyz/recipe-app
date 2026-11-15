@@ -18,7 +18,7 @@ const env = (k: string) => Deno.env.get(k) ?? (() => { throw new Error(`${k} not
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
 async function prepare(file: string): Promise<string> {
-  const tmp = await Deno.makeTempFile({ suffix: ".jpg" });
+  const tmp = await Deno.makeTempFile({ dir: `${here}results`, suffix: ".jpg" });   // removed below
   try {
     const cmd = new Deno.Command("sips", {
       args: ["-s", "format", "jpeg", "-s", "formatOptions", "80", "-Z", "1568", `${here}photos/${file}`, "--out", tmp],
