@@ -327,3 +327,195 @@ id,name,aliases,category,default_unit,grams_per_unit,density_g_per_ml,shelf_life
 326,saltine crackers,crackers;saltines;soda crackers,snacks,g,,,180,,180,false,wheat;gluten,172746,"Crackers, saltines (includes oyster, soda, soup)",418,9.46,74.05,8.64,2.8,1.29,941
 327,popcorn,,snacks,g,,0.033,365,,365,false,,167959,"Snacks, popcorn, air-popped",387,12.94,77.78,4.54,14.5,0.87,8
 328,granola bars,granola bar;cereal bar,snacks,each,28,,180,,180,false,gluten,167542,"Snacks, granola bars, hard, plain",471,10.1,64.4,19.8,5.3,28.57,294
+329,butter lettuce,butterhead lettuce;boston lettuce;bibb lettuce,produce,each,160,,7,,1,false,,168429,"Lettuce, butterhead (includes boston and bibb types), raw",13,1.35,2.23,0.22,1.1,0.94,5
+330,red leaf lettuce,red lettuce,produce,each,300,,7,,1,false,,168431,"Lettuce, red leaf, raw",13,1.33,2.26,0.22,0.9,0.48,25
+331,collard greens,collards,produce,g,,,5,300,1,false,,170406,"Collards, raw",32,3.02,5.42,0.61,4,0.46,17
+332,swiss chard,chard;rainbow chard,produce,g,,,5,300,1,false,,169991,"Chard, swiss, raw",19,1.8,3.74,0.2,1.6,1.1,213
+333,turnip,turnips,produce,each,122,,14,240,1,false,,170465,"Turnips, raw",28,0.9,6.43,0.1,1.8,3.8,67
+334,rutabaga,swede;rutabagas,produce,each,386,,21,240,7,false,,168454,"Rutabagas, raw",37,1.08,8.62,0.16,2.3,4.46,12
+335,kohlrabi,,produce,each,135,,14,240,1,false,,168424,"Kohlrabi, raw",27,1.7,6.2,0.1,3.6,2.6,20
+336,watercress,cress,produce,g,,,4,,1,false,,170068,"Watercress, raw",11,2.3,1.29,0.1,0.5,0.2,41
+337,endive,frisee;escarole,produce,g,,,5,,1,false,,168412,"Endive, raw",17,1.25,3.35,0.2,3.1,0.25,22
+338,radicchio,,produce,each,250,,7,,1,false,,168564,"Radicchio, raw",23,1.43,4.48,0.25,0.9,0.6,22
+339,green chili pepper,green chili;anaheim pepper;hatch chile,produce,each,45,,7,240,1,false,,170497,"Peppers, hot chili, green, raw",40,2,9.46,0.2,1.5,5.1,7
+340,serrano pepper,serrano;serrano chili,produce,each,6,,7,240,1,false,,169395,"Peppers, serrano, raw",32,1.74,6.7,0.44,3.7,3.83,10
+341,yellow squash,summer squash;crookneck squash,produce,each,196,,5,240,1,false,,170487,"Squash, summer, all varieties, raw",16,1.21,3.35,0.18,1.1,2.2,2
+342,acorn squash,,produce,each,430,,14,240,30,false,,168472,"Squash, winter, acorn, raw",40,0.8,10.42,0.1,1.5,,3
+343,spaghetti squash,,produce,each,1000,,14,240,30,false,,169298,"Squash, winter, spaghetti, raw",31,0.64,6.91,0.57,1.5,2.76,17
+344,cherry tomatoes,cherry tomato;grape tomatoes;grape tomato,produce,g,,,7,60,4,false,,170457,"Tomatoes, red, ripe, raw, year round average",18,0.88,3.89,0.2,1.2,2.63,5
+345,sun-dried tomatoes,sundried tomatoes;sun dried tomatoes,produce,g,,,180,365,180,false,,168567,"Tomatoes, sun-dried",258,14.11,55.76,2.97,12.3,37.59,107
+346,oyster mushrooms,oyster mushroom,produce,g,,,5,240,1,false,,168580,"Mushrooms, oyster, raw",33,3.31,6.09,0.41,2.3,1.11,18
+347,enoki mushrooms,enoki,produce,g,,,7,,1,false,,169382,"Mushrooms, enoki, raw",37,2.66,7.81,0.29,2.7,0.22,3
+348,jicama,yam bean,produce,each,600,,14,,14,false,,170073,"Yambean (jicama), raw",38,0.72,8.82,0.09,4.9,1.8,4
+349,apricot,apricots,produce,each,35,,5,240,2,false,,171697,"Apricots, raw",48,1.4,11.12,0.39,2,9.24,1
+350,fig,figs;fresh figs,produce,each,50,,3,240,1,false,,173021,"Figs, raw",74,0.75,19.18,0.3,2.9,16.26,1
+351,papaya,pawpaw;papayas,produce,each,500,,7,240,3,false,,169926,"Papayas, raw",43,0.47,10.82,0.26,1.7,7.82,8
+352,guava,guavas,produce,each,55,,4,240,2,false,,173044,"Guavas, common, raw",68,2.55,14.32,0.95,5.4,8.92,2
+353,passion fruit,passionfruit;granadilla,produce,each,18,,7,240,5,false,,169108,"Passion-fruit, (granadilla), purple, raw",97,2.2,23.38,0.7,10.4,11.2,28
+354,lychee,lychees;litchi,produce,each,10,,7,240,2,false,,169086,"Litchis, raw",66,0.83,16.53,0.44,1.3,15.23,1
+355,coconut,fresh coconut,produce,each,400,,7,240,30,false,tree nuts,170169,"Nuts, coconut meat, raw",354,3.33,15.23,33.49,9,6.23,20
+356,cranberries,fresh cranberries;cranberry,produce,g,,,28,365,1,false,,171722,"Cranberries, raw",46,0.46,11.97,0.13,3.6,4.27,2
+357,dried apricots,,produce,g,,,180,365,180,false,,173941,"Apricots, dried, sulfured, uncooked",241,3.39,62.64,0.51,7.3,53.44,10
+358,prunes,dried plums,produce,g,,,180,365,180,false,,168162,"Plums, dried (prunes), uncooked",240,2.18,63.88,0.38,7.1,38.13,2
+359,dried figs,,produce,g,,,180,365,180,false,,174665,"Figs, dried, uncooked",249,3.3,63.87,0.93,9.8,47.92,10
+360,persimmon,persimmons;sharon fruit,produce,each,168,,14,240,3,false,,169941,"Persimmons, japanese, raw",70,0.58,18.59,0.19,3.6,12.53,1
+361,red potatoes,red potato;new potatoes;baby potatoes,produce,each,170,,30,,21,false,,170029,"Potatoes, red, flesh and skin, raw",70,1.89,15.9,0.14,1.7,1.29,18
+362,white potatoes,white potato;yukon gold;yukon gold potatoes;gold potatoes,produce,each,213,,30,,21,false,,170028,"Potatoes, white, flesh and skin, raw",69,1.68,15.71,0.1,2.4,1.15,16
+363,taro,taro root;dasheen,produce,each,300,,14,,14,false,,169308,"Taro, raw",112,1.5,26.46,0.2,4.1,0.4,11
+364,water chestnuts,water chestnut,canned,g,,,5,,365,false,,170067,"Waterchestnuts, chinese, canned, solids and liquids",50,0.88,12.3,0.06,2.5,2.46,8
+365,bamboo shoots,,canned,g,,,5,,365,false,,169212,"Bamboo shoots, canned, drained solids",19,1.72,3.22,0.4,1.4,1.89,7
+366,seaweed,nori;wakame;seaweed sheets,produce,g,,,180,,365,false,,168458,"Seaweed, laver, raw",35,5.81,5.11,0.28,0.3,0.49,48
+367,sweet onion,vidalia onion;vidalia;walla walla onion,produce,each,331,,30,240,30,false,,170008,"Onions, sweet, raw",32,0.8,7.55,0.08,0.9,5.02,8
+368,yellow beans,wax beans;yellow wax beans,produce,g,,,7,240,1,false,,169320,"Beans, snap, yellow, raw",31,1.82,7.13,0.12,3.4,3.27,6
+369,hearts of palm,palm hearts,canned,g,,,5,,365,false,,168569,"Hearts of palm, canned",28,2.52,4.62,0.62,2.4,,426
+370,artichoke hearts,canned artichoke hearts;marinated artichoke hearts,canned,g,,,5,,365,false,,168387,"Artichokes, (globe or french), frozen, unprepared",38,2.63,7.75,0.43,3.9,,47
+371,ground chicken,minced chicken;chicken mince,meat,g,,,2,120,1,false,,171116,"Chicken, ground, raw",143,17.44,0.04,8.1,0,0,60
+372,ground beef 80/20,80/20 ground beef;regular ground beef,meat,g,,,2,120,1,false,,174036,"Beef, ground, 80% lean meat / 20% fat, raw",254,17.17,0,20,0,0,66
+373,beef brisket,brisket,meat,g,,,4,365,1,false,,168664,"Beef, brisket, whole, separable lean and fat, trimmed to 1/8"" fat, all grades, raw",253,18.42,0.56,19.06,0,0,69
+374,top round steak,london broil;round steak;top round,meat,g,,,4,365,1,false,,169532,"Beef, round, top round, steak, separable lean and fat, trimmed to 1/8"" fat, choice, raw",168,21.94,0,8.19,0,0,57
+375,flank steak,flank;skirt steak,meat,g,,,4,365,1,false,,169563,"Beef, flank, steak, separable lean and fat, trimmed to 0"" fat, all grades, raw",155,21.22,0,7.17,0,0,54
+376,beef tenderloin,filet mignon;tenderloin steak;fillet steak,meat,g,,,4,365,1,false,,169545,"Beef, tenderloin, steak, separable lean and fat, trimmed to 1/8"" fat, choice, raw",246,19.82,0,17.88,0,0,50
+377,duck,duck breast;duck meat,meat,g,,,2,180,1,false,,172410,"Duck, domesticated, meat only, raw",135,18.28,0.94,5.95,0,0,74
+378,chorizo,chorizo sausage,meat,g,,,7,60,1,false,,173859,"Sausage, pork, chorizo, link or ground, raw",296,13.63,3.78,25.1,0,0,788
+379,bologna,baloney,meat,g,,,7,60,1,false,,172013,"Bologna, beef and pork",308,15.2,5.49,24.59,0,4.42,960
+380,smoked sausage,kielbasa;polish sausage;andouille,meat,g,,,7,60,1,false,,174585,"Sausage, smoked link sausage, pork and beef",320,12,2.42,28.73,0,0,911
+381,turkey bacon,,meat,g,,,7,30,1,false,,174592,"Bacon, turkey, unprepared",226,15.94,1.89,16.93,,,1069
+382,pastrami,,meat,g,,,5,60,1,false,,170204,"Beef, cured, pastrami",147,21.8,0.36,5.82,0,0.1,1078
+383,pork belly,,meat,g,,,3,180,1,false,,167812,"Pork, fresh, belly, raw",518,9.34,0,53.01,0,0,32
+384,chicken leg quarters,chicken leg quarter;whole chicken legs,meat,g,,,2,270,1,false,,172378,"Chicken, broilers or fryers, leg, meat and skin, raw",214,16.37,0.17,15.95,0,0,84
+385,chicken livers,chicken liver,meat,g,,,2,90,1,false,,171060,"Chicken, liver, all classes, raw",119,16.92,0.73,4.83,0,0,71
+386,ground veal,veal;minced veal,meat,g,,,2,120,1,false,,175290,"Veal, ground, raw",197,18.58,0,13.06,0,0,103
+387,mahi mahi,mahi-mahi;dorado,seafood,g,,,2,240,1,false,fish,171959,"Fish, mahimahi, raw",85,18.5,0,0.7,0,,88
+388,haddock,,seafood,g,,,2,240,1,false,fish,171964,"Fish, haddock, raw",74,16.32,0,0.45,0,0,213
+389,pollock,alaska pollock,seafood,g,,,2,240,1,false,fish,173725,"Fish, pollock, Alaska, raw",76,17.17,0,0.82,,,159
+390,mackerel,,seafood,g,,,2,90,1,false,fish,175119,"Fish, mackerel, Atlantic, raw",205,18.6,0,13.89,0,0,90
+391,swordfish,,seafood,g,,,2,240,1,false,fish,173703,"Fish, swordfish, raw",144,19.66,0,6.65,0,0,81
+392,snapper,red snapper,seafood,g,,,2,240,1,false,fish,173698,"Fish, snapper, mixed species, raw",100,20.51,0,1.34,0,0,64
+393,oysters,oyster,seafood,g,,,2,90,1,false,shellfish,171978,"Mollusks, oyster, eastern, wild, raw",51,5.71,2.72,1.71,0,0.62,85
+394,crawfish,crayfish;crawdads,seafood,g,,,2,180,1,false,shellfish,175169,"Crustaceans, crayfish, mixed species, farmed, raw",72,14.85,0,0.97,0,,62
+395,imitation crab,crab sticks;surimi;kani,seafood,g,,,7,180,1,false,fish;wheat;egg,173702,"Fish, surimi",99,15.18,6.85,0.9,0,0,143
+396,colby cheese,colby;colby jack,dairy,g,,,28,180,1,false,milk,173416,"Cheese, colby",394,23.76,2.57,32.11,0,0.52,604
+397,part-skim mozzarella,low moisture mozzarella;part skim mozzarella,dairy,g,,,28,180,1,false,milk,170847,"Cheese, mozzarella, part skim milk",254,24.26,2.77,15.92,0,1.13,619
+398,grated parmesan,parmesan cheese grated;shaker parmesan,dairy,g,,,120,180,1,false,milk,171247,"Cheese, parmesan, grated",420,28.42,13.91,27.84,0,0.07,1804
+399,romano cheese,pecorino;pecorino romano;romano,dairy,g,,,60,180,1,false,milk,171249,"Cheese, romano",387,31.8,3.63,26.94,0,0.73,1433
+400,muenster cheese,muenster,dairy,g,,,28,180,1,false,milk,171245,"Cheese, muenster",368,23.41,1.12,30.04,0,1.12,628
+401,fontina,fontina cheese;havarti,dairy,g,,,28,180,1,false,milk,170843,"Cheese, fontina",389,25.6,1.55,31.14,0,1.55,800
+402,mexican cheese blend,shredded mexican cheese;taco cheese,dairy,g,,,21,180,1,false,milk,171288,"Cheese, Mexican blend",384,23.54,0.13,32.14,0,0,607
+403,cotija,cotija cheese;queso fresco,dairy,g,,,21,180,1,false,milk,170898,"Cheese, mexican, queso cotija",366,20,3.97,30,0,0,1400
+404,gruyere,gruyère;gruyere cheese,dairy,g,,,42,180,1,false,milk,171242,"Cheese, gruyere",413,29.81,0.36,32.34,0,0.36,714
+405,neufchatel,neufchâtel;light cream cheese,dairy,g,,,14,60,1,false,milk,171246,"Cheese, neufchatel",253,9.15,3.59,22.78,0,3.19,334
+406,light sour cream,reduced fat sour cream,dairy,g,,1.0,21,,1,false,milk,171256,"Cream, sour, reduced fat, cultured",135,2.94,4.26,12,0,0.16,89
+407,nonfat greek yogurt,fat free greek yogurt;0% greek yogurt,dairy,g,,,14,60,1,false,milk,170894,"Yogurt, Greek, plain, nonfat",59,10.19,3.6,0.39,0,3.24,36
+408,vanilla yogurt,flavored yogurt;yogurt cups,dairy,g,,,14,60,1,false,milk,170888,"Yogurt, vanilla, low fat.",85,4.93,13.8,1.25,0,13.8,66
+409,chocolate milk,,dairy,ml,,1.03,7,90,1,false,milk,173450,"Milk, chocolate, fluid, commercial, reduced fat, with added calcium",78,2.99,12.13,1.9,0.7,9.55,66
+410,unsweetened almond milk,,dairy,ml,,1.01,7,,1,false,tree nuts,174832,"Beverages, almond milk, unsweetened, shelf stable",15,0.4,1.31,0.96,0.2,0.81,72
+411,rice milk,,dairy,ml,,1.02,7,,1,false,,171942,"Beverages, rice milk, unsweetened",47,0.28,9.17,0.97,0.3,5.28,39
+412,coconut milk beverage,coconut milk drink;carton coconut milk,dairy,ml,,1.02,7,,1,false,tree nuts,174116,"Beverages, coconut milk, sweetened, fortified with calcium, vitamins A, B12, D2",31,0.21,2.92,2.08,0,2.5,19
+413,1% milk,low-fat milk;one percent milk,dairy,ml,,1.03,7,90,1,false,milk,170872,"Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",42,3.37,4.99,0.97,0,5.2,44
+414,kefir,,dairy,ml,,1.03,14,,1,false,milk,170904,"Kefir, lowfat, plain, LIFEWAY",43,3.79,4.77,1.02,0,4.61,40
+415,part-skim ricotta,light ricotta,dairy,g,,,7,60,1,false,milk,171248,"Cheese, ricotta, part skim milk",138,11.39,5.14,7.91,0,0.31,99
+416,pudding cups,pudding;chocolate pudding;vanilla pudding,dairy,each,113,,14,,1,false,milk,168778,"Puddings, chocolate, ready-to-eat",142,2.09,23.01,4.6,0,17.17,152
+417,frozen yogurt,froyo,frozen,g,,,1,60,1,false,milk,168105,"Frozen yogurts, flavors other than chocolate",127,3,21.6,3.6,0,19.92,63
+418,sherbet,sorbet,frozen,g,,,1,60,1,false,milk,167577,"Sherbet, orange",144,1.1,30.4,2,1.3,24.32,46
+419,frozen waffles,waffles;eggo,frozen,each,35,,7,90,1,false,wheat;gluten;egg;milk,175038,"Waffles, plain, frozen, ready-to-heat",285,6.47,42.98,9.7,2.2,4.91,638
+420,frozen pancakes,pancakes,frozen,each,35,,7,90,1,false,wheat;gluten;egg;milk,172771,"Pancakes plain, frozen, ready-to-heat (includes buttermilk)",233,5.23,37.75,6.83,1,8.32,461
+421,frozen pizza,pizza;cheese pizza,frozen,g,,,3,180,1,false,wheat;gluten;milk,170317,"Pizza, cheese topping, regular crust, frozen, cooked",268,10.36,29.02,12.28,2.2,3.57,447
+422,fish sticks,fish fingers,frozen,each,28,,2,180,1,false,fish;wheat;gluten,174195,"Fish, fish sticks, frozen, prepared",277,11.01,21.66,16.23,1.5,1.65,402
+423,chicken nuggets,nuggets;chicken tenders;frozen chicken nuggets,frozen,each,16,,3,90,1,false,wheat;gluten,170795,"School Lunch, chicken nuggets, whole grain breaded",270,15.67,22.86,12.9,2.2,0.49,511
+424,pie crust,pie shell;pastry crust,frozen,g,,,14,180,1,false,wheat;gluten,167932,"Pie crust, refrigerated, regular, unbaked",445,2.97,51.11,25.46,1.8,,409
+425,puff pastry,,frozen,g,,,3,365,1,false,wheat;gluten;milk,172790,"Puff pastry, frozen, ready-to-bake",551,7.3,45.1,38.1,1.5,0.74,249
+426,phyllo dough,filo;filo pastry;phyllo,frozen,g,,,14,240,1,false,wheat;gluten,172791,Phyllo dough,299,7.1,52.6,6,1.9,0.18,483
+427,frozen fish fillets,frozen fish;frozen white fish,frozen,g,,,2,180,1,false,fish,175130,"Fish, pollock, Alaska, raw (may contain additives to retain moisture)",56,12.19,0,0.41,0,0,333
+428,frozen artichokes,,frozen,g,,,3,365,1,false,,168387,"Artichokes, (globe or french), frozen, unprepared",38,2.63,7.75,0.43,3.9,,47
+429,frozen collard greens,frozen collards,frozen,g,,,3,365,1,false,,170408,"Collards, frozen, chopped, unprepared",33,2.69,6.46,0.37,3.6,,48
+430,soba noodles,soba;buckwheat noodles,grains,g,,,365,,365,false,wheat;gluten,168906,"Noodles, japanese, soba, dry",336,14.38,74.62,0.71,,,792
+431,ramen noodles,instant noodles;ramen;cup noodles,grains,each,85,,365,,365,false,wheat;gluten;soy,171177,"Soup, ramen noodle, any flavor, dry",440,10.17,60.26,17.59,2.9,1.98,1855
+432,arborio rice,risotto rice;medium grain rice;sushi rice,grains,g,,0.85,365,,365,false,,168879,"Rice, white, medium-grain, raw, enriched",360,6.61,79.34,0.58,1.4,,1
+433,wild rice,,grains,g,,0.65,365,,365,false,,169726,"Wild rice, raw",357,14.73,74.9,1.08,6.2,2.5,7
+434,millet,,grains,g,,0.8,365,,365,false,,169702,"Millet, raw",378,11.02,72.85,4.22,8.5,,5
+435,spelt,farro,grains,g,,0.75,365,,365,false,wheat;gluten,169745,"Spelt, uncooked",338,14.57,70.19,2.43,10.7,6.82,8
+436,granola,muesli,grains,g,,0.45,180,,180,false,tree nuts;gluten,171646,"Cereals ready-to-eat, granola, homemade",489,13.67,53.88,24.31,8.9,19.8,26
+437,cheerios,cereal;breakfast cereal;oat cereal,grains,g,,0.12,365,,365,false,,173884,"Cereals ready-to-eat, GENERAL MILLS, CHEERIOS",372,12.4,73.2,6.6,10.1,4.5,497
+438,corn flakes,cornflakes,grains,g,,0.12,365,,365,false,,174648,"Cereals ready-to-eat, RALSTON Corn Flakes",384,5.9,88.01,0.91,2.7,7.84,571
+439,instant oatmeal,oatmeal packets;instant oats,grains,each,28,,365,,365,false,,171661,"Cereals, oats, instant, fortified, plain, dry",362,11.92,69.52,6.9,10,1.5,220
+440,wheat crackers,whole wheat crackers;wheat thins,snacks,g,,,180,,180,false,wheat;gluten,174985,"Crackers, wheat, regular",455,7.3,70.73,16.4,6.9,15.48,699
+441,graham crackers,graham cracker,snacks,g,,,180,,180,false,wheat;gluten,174083,"Cookies, graham crackers, plain or honey, lowfat",386,5.71,77.96,5.71,5.7,22.86,629
+442,chocolate chip cookies,cookies;cookie,snacks,each,16,,30,180,30,false,wheat;gluten;milk;egg,172716,"Cookies, chocolate chip, commercially prepared, regular, higher fat, enriched",492,5.1,65.36,24.72,2,32.9,311
+443,oatmeal cookies,oatmeal cookie,snacks,each,18,,30,180,30,false,wheat;gluten,172725,"Cookies, oatmeal, commercially prepared, regular",450,6.2,68.7,18.1,2.8,24.66,520
+444,rice cakes,rice cake,snacks,each,9,,365,,365,false,,170250,"Snacks, rice cakes, brown rice, plain, unsalted",387,8.2,81.5,2.8,4.2,0.88,26
+445,trail mix,mixed nuts and raisins,snacks,g,,,180,,180,false,peanuts;tree nuts,167561,"Snacks, trail mix, regular",462,13.8,44.9,29.4,,,229
+446,beef jerky,jerky,snacks,g,,,365,,365,false,soy,167536,"Snacks, beef jerky, chopped and formed",410,33.2,11,25.6,1.8,9,1785
+447,chunky peanut butter,crunchy peanut butter,condiments,g,,1.09,180,,180,false,peanuts,174265,"Peanut butter, chunk style, with salt",589,24.06,21.57,49.94,8,8.41,486
+448,chocolate hazelnut spread,nutella;hazelnut spread,condiments,g,,1.2,180,,180,false,tree nuts;milk,168000,Chocolate-flavored hazelnut spread,539,5.41,62.36,29.73,5.4,54.05,41
+449,chocolate syrup,hershey's syrup,condiments,ml,,1.35,180,,365,false,,174117,"Beverages, chocolate syrup",279,2.1,65.1,1.13,2.6,49.65,72
+450,marshmallows,marshmallow,snacks,g,,,180,,180,false,,167995,"Candies, marshmallows",318,1.8,81.3,0.2,0.1,57.56,80
+451,milk chocolate,chocolate bar;candy bar,snacks,g,,,180,,365,false,milk;soy,167587,"Candies, milk chocolate",535,7.65,59.4,29.66,3.4,51.5,79
+452,gelatin,jello;jell-o,baking,g,,,365,,365,false,,168775,"Gelatin desserts, dry mix",381,7.8,90.5,0,0,86.04,466
+453,cream of tartar,,baking,g,,1.4,365,,365,false,,175041,"Leavening agents, cream of tartar",258,0,61.5,0,0.2,0,52
+454,shredded coconut,desiccated coconut;coconut flakes;flaked coconut,baking,g,,0.35,180,365,180,false,tree nuts,168586,"Nuts, coconut meat, dried (desiccated), sweetened, shredded",501,2.88,47.67,35.49,4.5,43.17,262
+455,salsa verde,green salsa;tomatillo salsa,condiments,g,,1.05,14,,365,false,,171824,"Sauce, salsa, verde, ready-to-serve",38,1.13,6.36,0.89,1.9,3.5,906
+456,enchilada sauce,,condiments,ml,,1.05,7,90,365,false,,174074,"Sauce, enchilada, red, mild, ready to serve",30,0.62,4.87,0.91,0.5,1.83,547
+457,caesar dressing,caesar,condiments,ml,,1.0,60,,365,false,egg;fish;milk,169055,"Salad dressing, caesar dressing, regular",542,2.17,3.3,57.85,0.5,2.81,1209
+458,thousand island dressing,thousand island,condiments,ml,,1.05,60,,365,false,egg,171402,"Salad dressing, thousand island, commercial, regular",379,1.09,14.64,35.06,0.8,15.18,962
+459,blue cheese dressing,bleu cheese dressing,condiments,ml,,1.0,60,,365,false,milk;egg,173562,"Salad dressing, blue or roquefort cheese dressing, commercial, regular",484,1.37,4.77,51.1,0.4,3.48,642
+460,sweet and sour sauce,sweet & sour sauce,condiments,ml,,1.1,90,,365,false,,174066,"Sauce, sweet and sour, ready-to-serve",154,0.27,38.22,0.02,0.1,18.75,539
+461,plum sauce,duck sauce,condiments,ml,,1.1,90,,365,false,,172879,"Sauce, plum, ready-to-serve",184,0.89,42.81,1.04,0.7,,538
+462,peanut sauce,satay sauce,condiments,ml,,1.1,30,,365,false,peanuts;soy,174070,"Sauce, peanut, made from peanut butter, water, soy sauce",257,6.31,22.02,16.02,1.8,17.07,1338
+463,tartar sauce,,condiments,ml,,1.0,180,,365,false,egg,171826,"Sauce, tartar, ready-to-serve",211,1,13.3,16.7,0.5,4.25,667
+464,cocktail sauce,seafood sauce,condiments,ml,,1.1,180,,365,false,,174067,"Sauce, cocktail, ready-to-serve",128,1.36,28.22,1.05,1.8,11.83,1262
+465,steak sauce,a1 sauce;a1,condiments,ml,,1.1,180,,365,false,,171825,"Sauce, steak, tomato based",95,1.25,22.04,0.23,1.5,9.82,1647
+466,gravy mix,gravy;brown gravy,condiments,g,,,365,,365,false,wheat;gluten,171565,"Gravy, brown, dry",367,10.74,59.38,9.61,2,,4843
+467,bouillon cubes,bouillon;stock cubes;stock cube;chicken bouillon,condiments,g,,,365,,365,false,,171562,"Soup, chicken broth or bouillon, dry",267,16.66,18.01,13.88,0,17.36,23875
+468,taco seasoning,taco seasoning mix;taco mix,spices,g,,0.6,365,,365,false,,172243,"Seasoning mix, dry, taco, original",322,4.5,58,0,13.3,10.83,7203
+469,chicken noodle soup,canned soup;soup,canned,g,,,4,,365,false,wheat;gluten;egg,171543,"Soup, chicken noodle, canned, condensed",48,2.37,6.07,1.55,0.9,0,681
+470,tomato soup,cream of tomato soup,canned,g,,,4,,365,false,,172882,"Soup, tomato, canned, condensed",66,1.46,15.22,0.44,1.1,8.23,377
+471,cream of chicken soup,condensed chicken soup,canned,g,,,4,,365,false,milk;wheat;gluten,171146,"Soup, cream of chicken, canned, condensed",90,2.38,7.16,5.77,0,0.54,702
+472,vegetable broth,vegetable stock;veggie broth,canned,ml,,1.0,5,90,365,false,,171583,"Soup, vegetable broth, ready to serve",5,0.24,0.93,0.07,0,0.55,296
+473,refried beans,,canned,g,,,4,90,365,false,,172438,"Refried beans, canned, traditional style",90,4.98,13.55,2.01,3.7,0.54,370
+474,baked beans,,canned,g,,,4,90,365,false,,175182,"Beans, baked, canned, plain or vegetarian",94,4.75,21.14,0.37,4.1,7.96,343
+475,dried chickpeas,dry chickpeas;dried garbanzo beans,grains,g,,0.8,365,,365,false,,173756,"Chickpeas (garbanzo beans, bengal gram), mature seeds, raw",378,20.47,62.95,6.04,12.2,10.7,24
+476,dried kidney beans,dry kidney beans,grains,g,,0.8,365,,365,false,,173744,"Beans, kidney, red, mature seeds, raw",337,22.53,61.29,1.06,15.2,2.1,12
+477,dried navy beans,dry navy beans;dried white beans,grains,g,,0.8,365,,365,false,,173745,"Beans, navy, mature seeds, raw",337,22.33,60.75,1.5,15.3,3.88,5
+478,fruit cocktail,canned fruit,canned,g,,,4,,365,false,,174668,"Fruit cocktail, (peach and pineapple and pear and grape and cherry), canned, juice pack, solids and liquids",46,0.46,11.86,0.01,1,10.86,4
+479,canned pears,,canned,g,,,4,,365,false,,169936,"Pears, canned, juice pack, solids and liquids",50,0.34,12.94,0.07,1.6,9.7,4
+480,mandarin oranges,canned mandarin oranges;canned mandarins,canned,g,,,4,,365,false,,169106,"Tangerines, (mandarin oranges), canned, juice pack",37,0.62,9.57,0.03,0.7,8.87,5
+481,roasted red peppers,jarred red peppers;roasted peppers,canned,g,,,7,,365,false,,168546,"Peppers, sweet, red, canned, solids and liquids",18,0.8,3.9,0.3,1.2,,1369
+482,pickled jalapeños,canned jalapeños;jalapeño slices;pickled jalapenos,canned,g,,,60,,365,false,,170080,"Peppers, jalapeno, canned, solids and liquids",27,0.92,4.74,0.94,2.6,2.14,1671
+483,canned salmon pink,pink salmon,seafood,g,,,3,,1095,false,fish,175175,"Fish, salmon, pink, canned, drained solids",138,23.1,0,5.02,0,0,381
+484,coffee,brewed coffee;cold brew,drinks,ml,,1.0,7,90,1,false,,171890,"Beverages, coffee, brewed, prepared with tap water",1,0.12,0,0.02,0,0,2
+485,tea,black tea;iced tea,drinks,ml,,1.0,5,,1,false,,173227,"Beverages, tea, black, brewed, prepared with tap water",1,0,0.3,0,0,0,3
+486,cola,soda;pop;coke,drinks,ml,,1.04,180,,270,false,,174852,"Beverages, carbonated, cola, regular",42,0,10.36,0.25,0,9.94,3
+487,sparkling water,club soda;soda water;seltzer,drinks,ml,,1.0,365,,365,false,,174842,"Beverages, carbonated, club soda",0,0,0,0,0,0,21
+488,beer,lager,drinks,ml,,1.01,180,,180,false,wheat;gluten,168746,"Alcoholic beverage, beer, regular, all",43,0.46,3.55,0,0,0,4
+489,white wine,dry white wine;chardonnay;sauvignon blanc,drinks,ml,,0.99,5,,365,false,,174837,"Alcoholic beverage, wine, table, white",82,0.07,2.6,0,0,0.96,5
+490,cranberry juice,cranberry juice cocktail,drinks,ml,,1.04,14,,365,false,,171903,"Cranberry juice cocktail, bottled",54,0,13.52,0.1,0,11.87,2
+491,grape juice,,drinks,ml,,1.06,10,,365,false,,173042,"Grape juice, canned or bottled, unsweetened, without added ascorbic acid",60,0.37,14.77,0.13,0.2,14.2,5
+492,pineapple juice,,drinks,ml,,1.05,10,,365,false,,169947,"Pineapple juice, canned or bottled, unsweetened, without added ascorbic acid",53,0.36,12.87,0.12,0.2,9.98,2
+493,tomato juice,vegetable juice;v8,drinks,ml,,1.03,10,,365,false,,170458,"Tomato juice, canned, with salt added",17,0.85,3.53,0.29,0.4,2.58,253
+494,saffron,,spices,g,,,365,,730,false,,170934,"Spices, saffron",310,11.43,65.37,5.85,3.9,,148
+495,anise seed,aniseed;anise,spices,g,,,365,,730,false,,171316,"Spices, anise seed",337,17.6,50.02,15.9,14.6,,16
+496,poppy seeds,poppy seed,spices,g,,,365,,730,false,,171330,"Spices, poppy seed",525,17.99,28.13,41.56,19.5,2.99,26
+497,celery seed,,spices,g,,,365,,730,false,,170920,"Spices, celery seed",392,18.07,41.35,25.27,11.8,0.67,160
+498,caraway seeds,caraway;caraway seed,spices,g,,,365,,730,false,,170918,"Spices, caraway seed",333,19.77,49.9,14.59,38,0.64,17
+499,mace,ground mace,spices,g,,,365,,730,false,,170927,"Spices, mace, ground",475,6.71,50.5,32.38,20.2,,80
+500,poultry seasoning,,spices,g,,,365,,730,false,,171331,"Spices, poultry seasoning",307,9.59,65.59,7.53,11.3,1.8,27
+501,pumpkin pie spice,mixed spice,spices,g,,,365,,730,false,,171332,"Spices, pumpkin pie spice",342,5.76,69.28,12.6,14.8,7.76,52
+502,white pepper,ground white pepper,spices,g,,,365,,730,false,,170933,"Spices, pepper, white",296,10.4,68.61,2.12,26.2,,5
+503,savory,dried savory,spices,g,,,365,,730,false,,170936,"Spices, savory, ground",272,6.73,68.73,5.91,45.7,,24
+504,sazon,sazon seasoning;adobo seasoning,spices,g,,,365,,730,false,,172242,"Seasoning mix, dry, sazon, coriander & annatto",0,0,0,0,0,0,17000
+505,chili seasoning,chili seasoning mix,spices,g,,,365,,730,false,,173476,"Seasoning mix, dry, chili, original",335,10.82,56.56,7.3,10.8,8.67,4616
+506,rice vinegar,rice wine vinegar;seasoned rice vinegar,condiments,ml,,1.01,730,,730,false,,173469,"Vinegar, cider",21,0,0.93,0,0,0.4,5
+507,lard,pork fat,oils,g,,0.92,180,365,120,false,,171401,Lard,902,0,0,100,0,0,0
+508,shortening,vegetable shortening;crisco,oils,g,,0.9,365,,365,false,,171011,"Shortening, household, soybean (partially hydrogenated)-cottonseed (partially hydrogenated)",884,0,0,100,0,0,0
+509,grapeseed oil,,oils,ml,,0.92,365,,365,false,,171028,"Oil, grapeseed",884,0,0,100,0,0,0
+510,walnut oil,,oils,ml,,0.92,180,,180,false,tree nuts,171030,"Oil, walnut",884,0,0,100,0,0,0
+511,flaxseed oil,linseed oil;flax oil,oils,ml,,0.93,90,,30,false,,167702,"Oil, flaxseed, cold pressed",884,0.11,0,99.98,0,0,0
+512,sunflower oil,safflower oil,oils,ml,,0.92,365,,365,false,,171025,"Oil, sunflower, linoleic, (approx. 65%)",884,0,0,100,0,0,0
+513,macadamia nuts,macadamias;macadamia,nuts,g,,,180,365,90,false,tree nuts,170178,"Nuts, macadamia nuts, raw",718,7.91,13.82,75.77,8.6,4.57,5
+514,chestnuts,chestnut,nuts,g,,,30,180,7,false,tree nuts,170164,"Nuts, chestnuts, chinese, raw",224,4.2,49.07,1.11,,,3
+515,hemp seeds,hemp hearts;hulled hemp seeds,nuts,g,,,365,365,180,false,,170148,"Seeds, hemp seed, hulled",553,31.56,8.67,48.75,4,1.5,5
+516,dinner rolls,dinner roll;bread rolls,bakery,each,28,,7,90,3,false,wheat;gluten,172793,"Rolls, dinner, plain, commercially prepared (includes brown-and-serve)",310,10.86,52.04,6.47,2,5.55,467
+517,oatmeal bread,oat bread,bakery,g,,,7,90,5,false,wheat;gluten,172678,"Bread, oatmeal",269,8.4,48.5,4.4,4,8.14,447
+518,raisin bread,cinnamon raisin bread,bakery,g,,,7,90,5,false,wheat;gluten,172680,"Bread, raisin, enriched",274,7.9,52.3,4.4,4.3,5.68,347
+519,blueberry muffins,muffin;muffins,bakery,each,113,,7,90,3,false,wheat;gluten;egg;milk,172765,"Muffins, blueberry, commercially prepared (Includes mini-muffins)",375,4.49,53,16.07,1.1,31.47,336
+520,donuts,doughnut;doughnuts;donut,bakery,each,60,,5,90,2,false,wheat;gluten;egg;milk,174992,"Doughnuts, cake-type, plain, sugared or glazed",426,5.2,50.8,22.9,1.5,,402
