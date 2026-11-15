@@ -138,7 +138,7 @@ struct RecipesView: View {
                 Image(systemName: "book.closed").font(.title).foregroundStyle(Color.accentColor)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("No saved recipes yet").font(.headline)
-                    Text("Save a recipe idea, or tap to write down one of your own.")
+                    Text("Save an idea, or tap to write your own.")
                         .font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
                 }
