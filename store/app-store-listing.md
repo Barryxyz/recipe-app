@@ -50,7 +50,7 @@ Terms of use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ## Other fields
 - **Primary category:** Food & Drink. **Secondary:** Lifestyle.
 - **Age rating:** 4+ (every questionnaire answer is "None").
-- **Support URL:** needs a page; the share site could host `/support` with the contact email (fridgefoodscanner@gmail.com).
+- **Support URL:** https://fridge-share.fridge-app.workers.dev/support (FAQ + contact email fridgefoodscanner@gmail.com)
 - **Privacy policy URL:** https://fridge-share.fridge-app.workers.dev/privacy
 - **Copyright:** 2026 <your name>
 

@@ -3,9 +3,11 @@
 //                   the publishable key), or a 404 page; cached for 60 s so revoking applies fast
 //   GET /.well-known/apple-app-site-association  for links that open the app (F4.3)
 //   GET /privacy    the privacy policy (F5.3)
+//   GET /support    the support page (App Store support URL)
 //   anything else   404
 import { notFoundPage, page, recipePage } from "./render.js";
 import { privacyBody } from "./privacy.js";
+import { supportBody } from "./support.js";
 
 const TOKEN = /^\/r\/([0-9A-Za-z]{22})\/?$/;
 
@@ -45,6 +47,11 @@ export async function handle(request, env, fetchImpl = fetch) {
 
   if (url.pathname === "/privacy" || url.pathname === "/privacy/") {
     const body = page({ title: "Privacy policy", description: "What the app stores and how to delete it.", body: privacyBody(), index: true });
+    return html(body, 200, { maxAge: 3600, index: true });
+  }
+
+  if (url.pathname === "/support" || url.pathname === "/support/") {
+    const body = page({ title: "Spoil Not support", description: "Help with Spoil Not and how to contact us.", body: supportBody(), index: true });
     return html(body, 200, { maxAge: 3600, index: true });
   }
 

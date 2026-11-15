@@ -89,3 +89,16 @@ Deno.test("the privacy policy is served, indexable, with the app name and contac
   assertStringIncludes(body, "Settings → Delete account");
   assertEquals(body.includes("noindex"), false);
 });
+
+Deno.test("the support page is served with the contact address and the key answers", async () => {
+  const res = await handle(new Request("https://x.workers.dev/support"), ENV, () => {
+    throw new Error("no Supabase call for /support");
+  });
+  assertEquals(res.status, 200);
+  const body = await res.text();
+  assertStringIncludes(body, "<h1>Spoil Not support</h1>");
+  assertStringIncludes(body, "mailto:fridgefoodscanner@gmail.com");
+  assertStringIncludes(body, "Restore purchases");
+  assertStringIncludes(body, "Delete account");
+  assertStringIncludes(body, 'href="/privacy"');
+});
