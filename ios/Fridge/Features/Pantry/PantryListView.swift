@@ -129,7 +129,8 @@ struct PantryListView: View {
             } description: {
                 Text("Add what's in your fridge, freezer and cupboards.")
             } actions: {
-                HStack {
+                // Stacked, full width: side by side, "Scan your fridge" was cut off.
+                VStack(spacing: 12) {
                     Button { showScan = true } label: {
                         Label("Scan your fridge", systemImage: "camera").frame(maxWidth: .infinity)
                     }
@@ -139,7 +140,8 @@ struct PantryListView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .padding(.horizontal)
+                .controlSize(.large)
+                .padding(.horizontal, 32)
             }
         } else {
             List {

@@ -133,16 +133,30 @@ struct RecipesView: View {
         if !loadedSaved {
             Section { ProgressView().frame(maxWidth: .infinity) }
         } else if saved.isEmpty {
+            // A card like "Get recipe ideas" (a full-height empty state looked stretched).
             Section {
-                ContentUnavailableView {
-                    Label("No saved recipes yet", systemImage: "book.closed")
-                } description: {
-                    Text("Save a recipe idea, or write down one of your own.")
-                } actions: {
-                    Button { Task { await startNewRecipe() } } label: { Label("Write your own", systemImage: "square.and.pencil") }
-                        .buttonStyle(.bordered)
+                Button { Task { await startNewRecipe() } } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "book.closed").font(.title).foregroundStyle(Color.accentColor)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("No saved recipes yet").font(.headline)
+                            Text("Save a recipe idea, or tap to write down one of your own.")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Spacer()
+                        Image(systemName: "square.and.pencil").foregroundStyle(Color.accentColor)
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .contentShape(RoundedRectangle(cornerRadius: 16))
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint("Write your own recipe")
             }
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         } else {
             Section {
                 searchField
