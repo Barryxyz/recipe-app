@@ -44,8 +44,6 @@ struct RecipesView: View {
                 Section {
                     ideasCard
                     if let lastSession, !lastSession.response.recipes.isEmpty { lastIdeasCard(lastSession) }
-                    // In the same section as the ideas card, so the gap between them is the same.
-                    if loadedSaved && saved.isEmpty { noSavedCard }
                 }
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -157,7 +155,10 @@ struct RecipesView: View {
         if !loadedSaved {
             Section { ProgressView().frame(maxWidth: .infinity) }
         } else if saved.isEmpty {
-            EmptyView()   // the card is in the top section
+            Section { noSavedCard }
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         } else {
             Section {
                 searchField
