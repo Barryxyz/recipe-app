@@ -44,6 +44,8 @@ struct RecipesView: View {
                 Section {
                     ideasCard
                     if let lastSession, !lastSession.response.recipes.isEmpty { lastIdeasCard(lastSession) }
+                    // In the same section as the ideas card, so the gap between them is the same.
+                    if loadedSaved && saved.isEmpty { noSavedCard }
                 }
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -129,34 +131,33 @@ struct RecipesView: View {
         SavedRecipeSearch.filter(saved, search: search, filters: filters, pantry: pantry)
     }
 
+    /// No saved recipes yet: a card like "Get recipe ideas" (a full-height empty state looked stretched).
+    private var noSavedCard: some View {
+        Button { Task { await startNewRecipe() } } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "book.closed").font(.title).foregroundStyle(Color.accentColor)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("No saved recipes yet").font(.headline)
+                    Text("Save a recipe idea, or tap to write down one of your own.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+                Spacer()
+                Image(systemName: "square.and.pencil").foregroundStyle(Color.accentColor)
+            }
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Write your own recipe")
+    }
+
     @ViewBuilder private var savedSection: some View {
         if !loadedSaved {
             Section { ProgressView().frame(maxWidth: .infinity) }
         } else if saved.isEmpty {
-            // A card like "Get recipe ideas" (a full-height empty state looked stretched).
-            Section {
-                Button { Task { await startNewRecipe() } } label: {
-                    HStack(spacing: 14) {
-                        Image(systemName: "book.closed").font(.title).foregroundStyle(Color.accentColor)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("No saved recipes yet").font(.headline)
-                            Text("Save a recipe idea, or tap to write down one of your own.")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                        }
-                        Spacer()
-                        Image(systemName: "square.and.pencil").foregroundStyle(Color.accentColor)
-                    }
-                    .padding()
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
-                    .contentShape(RoundedRectangle(cornerRadius: 16))
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Write your own recipe")
-            }
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            EmptyView()   // the card is in the top section
         } else {
             Section {
                 searchField

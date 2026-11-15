@@ -41,6 +41,7 @@ struct ShoppingListView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .listSectionSpacing(.compact)   // less space between the add field and the list
             .navigationTitle("Shopping")
             .refreshable { await load() }
             .task { await load() }
