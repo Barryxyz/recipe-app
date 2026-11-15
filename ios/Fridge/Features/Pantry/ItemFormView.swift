@@ -40,6 +40,9 @@ struct ItemFormView: View {
     @State private var showExpiryEditor = false
     @State private var saving = false
     @State private var errorMessage: String?
+    /// "Did you mean…?" before adding a custom item.
+    @State private var didYouMean: (name: String, choices: [IngredientChoice])?
+    @State private var suggesting = false
     @State private var confirmZeroQuantity = false
     @State private var confirmDelete = false
     @State private var updateExisting: (ids: [UUID], name: String)?
@@ -71,6 +74,23 @@ struct ItemFormView: View {
             .alert("Something went wrong", isPresented: .constant(errorMessage != nil), actions: {
                 Button("OK") { errorMessage = nil }
             }, message: { Text(errorMessage ?? "") })
+            .confirmationDialog("Did you mean…?", isPresented: Binding(get: { didYouMean != nil },
+                                                                     set: { if !$0 { didYouMean = nil } }),
+                                titleVisibility: .visible, presenting: didYouMean) { pending in
+                ForEach(pending.choices) { choice in
+                    Button(choice.name) {
+                        Events.log(.customSuggestion, ["shown": .integer(pending.choices.count), "accepted": .bool(true)])
+                        pick(choice)
+                    }
+                }
+                Button("Add \u{201C}\(pending.name)\u{201D} as my own item") {
+                    Events.log(.customSuggestion, ["shown": .integer(pending.choices.count), "accepted": .bool(false)])
+                    Task { await addCustom(pending.name) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("These are in the food list, so nutrition, units and expiry dates are filled in for you. Your own items don't have those.")
+            }
             .confirmationDialog("Quantity is 0. Mark it used?", isPresented: $confirmZeroQuantity, titleVisibility: .visible) {
                 Button("Mark used") { Task { await setStatus(.used) } }
                 Button("Keep at 0") { Task { await saveEdit(force: true) } }
@@ -111,10 +131,15 @@ struct ItemFormView: View {
                     Button { pick(choice) } label: { resultRow(choice) }
                 }
                 Button {
-                    Task { await addCustom(trimmed) }
+                    Task { await customTapped(trimmed) }
                 } label: {
-                    Label("Add \u{201C}\(trimmed)\u{201D} as custom item", systemImage: "plus.circle")
+                    HStack {
+                        Label(results.isEmpty ? "Add \u{201C}\(trimmed)\u{201D} as your own item"
+                                              : "Not listed? Add \u{201C}\(trimmed)\u{201D}", systemImage: "plus.circle")
+                        if suggesting { Spacer(); ProgressView() }
+                    }
                 }
+                .disabled(suggesting)
             }
             if changingIngredient {
                 Button("Keep \(draft.ingredient?.name ?? "current")") { changingIngredient = false; query = "" }
@@ -327,6 +352,16 @@ struct ItemFormView: View {
         query = ""
         results = []
         searchFocused = false
+    }
+
+    /// Suggests close food-list items first; adds the custom item straight away if there are none.
+    private func customTapped(_ name: String) async {
+        suggesting = true
+        let choices = await CustomSuggestions.suggestions(for: name, results: results) { word in
+            (try? await PantryAPI.search(word, limit: 3)) ?? []
+        }
+        suggesting = false
+        if choices.isEmpty { await addCustom(name) } else { didYouMean = (name, choices) }
     }
 
     private func addCustom(_ name: String) async {
