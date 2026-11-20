@@ -23,6 +23,12 @@ targets:
       Release: Config/Prod.xcconfig
     dependencies:
       - package: Supabase
+    # F4.3: share links (https://<share host>/r/<token>) open the app (Universal Links).
+    entitlements:
+      path: Fridge/Fridge.entitlements
+      properties:
+        com.apple.developer.associated-domains:
+          - applinks:fridge-share.fridge-app.workers.dev
     info:
       path: Fridge/Info.plist
       properties:
@@ -55,7 +61,7 @@ targets:
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
-        DEVELOPMENT_TEAM: V2KLBCFV26 # Barry Chin (Personal Team), free Apple ID
+        DEVELOPMENT_TEAM: V2KLBCFV26 # Barry Chin, Apple Developer Program (Individual) since 2026-11-20
 
   FridgeTests:
     type: bundle.unit-test
