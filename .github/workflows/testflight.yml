@@ -1,0 +1,59 @@
+# Builds the iOS app with the latest Xcode on GitHub's Mac runners and uploads it to TestFlight.
+# Run it from the Actions tab ("Run workflow") or with: gh workflow run testflight.yml
+#
+# Secrets (Settings -> Secrets and variables -> Actions), never in the repo:
+#   ASC_KEY_ID      App Store Connect API key id (Admin role: needed for cloud signing)
+#   ASC_ISSUER_ID   the issuer id shown above the keys list
+#   ASC_KEY_P8      the full text of AuthKey_<id>.p8
+# Only someone with write access can start it (workflow_dispatch); forks never get the secrets.
+name: TestFlight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode 26 or later
+        run: |
+          xcode=$(ls -d /Applications/Xcode_2[6-9]*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1)
+          [ -n "$xcode" ] || { echo "No Xcode 26+ on this runner"; ls /Applications | grep -i xcode; exit 1; }
+          echo "DEVELOPER_DIR=$xcode/Contents/Developer" >> "$GITHUB_ENV"
+          echo "Using $xcode"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ] || { echo "Set the three ASC_ secrets first."; exit 1; }
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s\n' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+          {
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+            echo "ASC_KEY_PATH=\$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8"
+          } > ~/.appstoreconnect/spoilnot.env
+
+      - name: Build and upload
+        run: ./scripts/upload-testflight.sh
+
+      - name: Remove the key
+        if: always()
+        run: rm -rf ~/.appstoreconnect

@@ -10,7 +10,7 @@
 # Apple processes the build for ~10-30 minutes before it shows up in TestFlight.
 set -euo pipefail
 cd "$(dirname "$0")/../ios"
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"   # CI picks its own Xcode
 
 CONFIG="$HOME/.appstoreconnect/spoilnot.env"
 [ -f "$CONFIG" ] || { echo "Missing $CONFIG (see the comment at the top of this script)."; exit 1; }
