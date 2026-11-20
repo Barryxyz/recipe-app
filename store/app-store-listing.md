@@ -12,7 +12,7 @@ privacy policy and terms links must stay in the description (subscription apps).
 
 Keywords don't repeat words already in the name or subtitle (Apple indexes those anyway).
 
-## Description (2153/4000)
+## Description (2202/4000)
 
 ```
 Spoil Not keeps track of the food you already have and helps you cook it before it goes bad.
@@ -37,7 +37,7 @@ NO SIGN-UP
 There's no account to create, and no email or name needed. Delete everything at any time in Settings.
 
 FREE AND PREMIUM
-Your pantry, saved recipes, shopping list, reminders and sharing are free. Scanning and recipe ideas are part of a monthly or yearly subscription.
+Your pantry, saved recipes, shopping list, reminders and sharing are free. Scanning and recipe ideas are part of a monthly or yearly subscription. The yearly plan starts with a 1-week free trial.
 
 Subscriptions renew automatically until cancelled. Payment is charged to your Apple ID at confirmation, and you can manage or cancel anytime in Settings → Apple ID → Subscriptions at least 24 hours before the end of the current period.
 
